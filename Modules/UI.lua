@@ -1,7 +1,8 @@
-local UI = {}
+-- Orange Hub V4 - UI Module
+local LP = game.Players.LocalPlayer
 
-function UI.Start()
-    -- Очистка старого UI
+-- Функция создания интерфейса
+local function CreateMenu()
     if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
         game.CoreGui["OrangeHub_V4"]:Destroy() 
     end
@@ -10,24 +11,19 @@ function UI.Start()
     gui.Name = "OrangeHub_V4"
     gui.ResetOnSpawn = false
 
-    -- ГЛАВНОЕ ОКНО
     local Main = Instance.new("Frame", gui)
     Main.Size = UDim2.new(0, 500, 0, 350)
     Main.Position = UDim2.new(0.5, -250, 0.5, -175)
     Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
-    Main.BorderSizePixel = 0
     Main.Active = true
     Main.Draggable = true
     Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
-    -- Оранжевый акцент
     local Accent = Instance.new("Frame", Main)
     Accent.Size = UDim2.new(1, 0, 0, 3)
     Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-    Accent.BorderSizePixel = 0
     Instance.new("UICorner", Accent)
 
-    -- САЙДБАР
     local Sidebar = Instance.new("Frame", Main)
     Sidebar.Size = UDim2.new(0, 140, 1, 0)
     Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
@@ -45,20 +41,16 @@ function UI.Start()
     TabHolder.Size = UDim2.new(1, -10, 1, -80)
     TabHolder.Position = UDim2.new(0, 5, 0, 70)
     TabHolder.BackgroundTransparency = 1
-    local TabList = Instance.new("UIListLayout", TabHolder)
-    TabList.Padding = UDim.new(0, 5)
+    Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
 
-    -- КОНТЕЙНЕР ДЛЯ КНОПОК
     local Container = Instance.new("ScrollingFrame", Main)
     Container.Size = UDim2.new(1, -160, 1, -70)
     Container.Position = UDim2.new(0, 150, 0, 55)
     Container.BackgroundTransparency = 1
     Container.BorderSizePixel = 0
     Container.ScrollBarThickness = 2
-    local ContainerList = Instance.new("UIListLayout", Container)
-    ContainerList.Padding = UDim.new(0, 10)
+    Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
-    -- ФУНКЦИЯ СОЗДАНИЯ КНОПОК (Тогглов)
     local function createToggle(name, callback)
         local btn = Instance.new("TextButton", Container)
         btn.Size = UDim2.new(1, -10, 0, 45)
@@ -87,37 +79,26 @@ function UI.Start()
             enabled = not enabled
             dot:TweenPosition(enabled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6), "Out", "Sine", 0.15, true)
             bg.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(60, 60, 60)
-            if callback then callback(enabled) end
+            pcall(callback, enabled)
         end)
     end
 
-    -- ФУНКЦИЯ ПЕРЕКЛЮЧЕНИЯ ВКЛАДОК
     local function showTab(tabName)
         for _, v in ipairs(Container:GetChildren()) do 
             if v:IsA("TextButton") then v:Destroy() end 
         end
         
         if tabName == "Player" then
-            createToggle("Speed Hack", function(v) 
-                game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 
-            end)
-            createToggle("Fly", function(v) 
-                if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end 
-            end)
-            createToggle("Anti-AFK", function(v) 
-                _G.AntiAFK = v 
-                local vu = game:GetService("VirtualUser")
-                game.Players.LocalPlayer.Idled:Connect(function()
-                    if _G.AntiAFK then vu:Button2Down(Vector2.new(0,0),workspace.CurrentCamera.CFrame) task.wait(1) vu:Button2Up(Vector2.new(0,0),workspace.CurrentCamera.CFrame) end
-                end)
-            end)
+            createToggle("Speed Hack", function(v) LP.Character.Humanoid.WalkSpeed = v and 100 or 16 end)
+            createToggle("Fly", function(v) if _G.Modules and _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end end)
+            createToggle("Anti-AFK", function(v) _G.AntiAFK = v end)
         elseif tabName == "Combat" then
             createToggle("KillAura", function(v) 
-                if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end 
+                if _G.Modules and _G.Modules["Combat"] then 
+                    _G.Modules["Combat"].KillAura = v 
+                end 
             end)
-            createToggle("ESP Monsters", function(v) 
-                if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end 
-            end)
+            createToggle("ESP Monsters", function(v) if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end end)
         end
     end
 
@@ -127,17 +108,14 @@ function UI.Start()
         t.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
         t.Text = name
         t.TextColor3 = Color3.new(1, 1, 1)
-        t.Font = Enum.Font.GothamBold
         Instance.new("UICorner", t)
         t.MouseButton1Click:Connect(function() showTab(name) end)
     end
 
-    -- Инициализация кнопок
     addSidebarButton("Player")
     addSidebarButton("Combat")
     showTab("Player")
 
-    -- Кнопки закрытия и иконка открытия
     local Collapse = Instance.new("TextButton", Main)
     Collapse.Size = UDim2.new(0, 26, 0, 26)
     Collapse.Position = UDim2.new(1, -32, 0, 8)
@@ -160,4 +138,7 @@ function UI.Start()
     OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 end
 
-return UI
+-- ЗАПУСК СРАЗУ
+task.spawn(CreateMenu)
+
+return {Loaded = true}
