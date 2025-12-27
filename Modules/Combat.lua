@@ -1,83 +1,75 @@
 local CombatModule = {
     KillAura = false,
-    Range = 20
+    Range = 16 -- Оптимальная дистанция для регистрации сервером
 }
 
 local LP = game.Players.LocalPlayer
-local Vim = game:GetService("VirtualInputManager")
-local PlayerGui = LP:FindFirstChild("PlayerGui")
-
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
--- Функция для поиска кнопки атаки в интерфейсе игры
-local function clickAttackButton()
-    -- Пытаемся найти кнопку в стандартных местах для 99 ночей
-    -- Обычно они называются 'Attack', 'Punch', 'Use' или лежат в 'MainGui'
-    if PlayerGui then
-        for _, v in ipairs(PlayerGui:GetDescendants()) do
-            if v:IsA("ImageButton") or v:IsA("TextButton") then
-                if v.Visible and (v.Name:lower():find("attack") or v.Name:lower():find("action") or v.Name:lower():find("hit")) then
-                    -- Имитируем нажатие прямо по центру этой кнопки
-                    local pos = v.AbsolutePosition
-                    local size = v.AbsoluteSize
-                    Vim:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, true, game, 1)
-                    task.wait(0.01)
-                    Vim:SendMouseButtonEvent(pos.X + size.X/2, pos.Y + size.Y/2, 0, false, game, 1)
-                    return true
+-- Функция поиска ближайшего живого врага
+local function getClosestEnemy()
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    
+    local closest, dist = nil, CombatModule.Range
+    local myPos = char.HumanoidRootPart.Position
+
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            -- Проверка: не игрок и есть здоровье
+            if not game.Players:GetPlayerFromCharacter(obj) and obj:FindFirstChildOfClass("Humanoid").Health > 0 then
+                local isEnemy = false
+                for _, name in ipairs(enemies) do
+                    if obj.Name:find(name) then isEnemy = true break end
                 end
-            end
-        end
-    end
-    return false
-end
 
-task.spawn(function()
-    while true do
-        task.wait(0.2)
-        if CombatModule.KillAura and LP.Character then
-            local foundTarget = false
-            local myPos = LP.Character.HumanoidRootPart.Position
-
-            -- 1. Работа с хитбоксами и поиск цели
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if obj:IsA("Model") then
-                    local isEnemy = false
-                    for _, name in ipairs(enemies) do
-                        if obj.Name:find(name) then isEnemy = true break end
-                    end
-
-                    if isEnemy and not game.Players:GetPlayerFromCharacter(obj) then
-                        local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-                        if root then
-                            local dist = (myPos - root.Position).Magnitude
-                            if dist < CombatModule.Range then
-                                -- Раздуваем куб
-                                root.Size = Vector3.new(12, 12, 12)
-                                root.Transparency = 0.8
-                                root.CanCollide = false
-                                foundTarget = true
-                                
-                                -- Поворачиваемся
-                                LP.Character.HumanoidRootPart.CFrame = CFrame.new(myPos, Vector3.new(root.Position.X, myPos.Y, root.Position.Z))
-                            else
-                                -- Сдуваем обратно, если далеко
-                                root.Size = Vector3.new(2, 2, 2)
-                                root.Transparency = 1
-                            end
+                if isEnemy then
+                    local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                    if root then
+                        local d = (myPos - root.Position).Magnitude
+                        if d < dist then
+                            dist = d
+                            closest = obj
                         end
                     end
                 end
             end
+        end
+    end
+    return closest
+end
 
-            -- 2. Если враг рядом — бьем через кнопку интерфейса
-            if foundTarget then
+task.spawn(function()
+    while true do
+        task.wait(0.15) -- Скорость ударов
+        
+        if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local target = getClosestEnemy()
+            
+            if target then
                 local tool = LP.Character:FindFirstChildOfClass("Tool")
-                if tool then
-                    -- Если не нашли кнопку в UI, просто кликаем в правую часть экрана
-                    if not clickAttackButton() then
-                        Vim:SendMouseButtonEvent(900, 500, 0, true, game, 1)
-                        task.wait(0.01)
-                        Vim:SendMouseButtonEvent(900, 500, 0, false, game, 1)
+                local targetRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+                
+                if targetRoot and tool then
+                    -- 1. МОМЕНТАЛЬНЫЙ РАЗВОРОТ (необходим для сервера)
+                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(
+                        LP.Character.HumanoidRootPart.Position, 
+                        Vector3.new(targetRoot.Position.X, LP.Character.HumanoidRootPart.Position.Y, targetRoot.Position.Z)
+                    )
+
+                    -- 2. ВИЗУАЛЬНЫЙ ВЗМАХ
+                    tool:Activate()
+
+                    -- 3. ПРЯМАЯ ОТПРАВКА УРОНА (Remote Injection)
+                    -- Мы ищем любое событие внутри топора, которое отвечает за урон
+                    for _, remote in ipairs(tool:GetDescendants()) do
+                        if remote:IsA("RemoteEvent") then
+                            -- Пробуем самые частые форматы данных, которые ждут серверы
+                            remote:FireServer(target) 
+                            remote:FireServer(targetRoot)
+                            remote:FireServer(targetRoot.Position)
+                            remote:FireServer(target:FindFirstChildOfClass("Humanoid"))
+                        end
                     end
                 end
             end
