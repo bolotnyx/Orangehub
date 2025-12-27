@@ -2,23 +2,16 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
-local ESP = true
+local ESP = {}
+ESP.Enabled = false
 
 RunService.RenderStepped:Connect(function()
-	if not ESP then return end
+	if not ESP.Enabled then return end
 
 	for _,v in ipairs(workspace:GetDescendants()) do
-		-- Только модели с Humanoid
 		if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-			
-			-- Пропускаем игроков
 			if not Players:GetPlayerFromCharacter(v) then
-				
-				local humanoid = v:FindFirstChild("Humanoid")
-				-- Только живые NPC
-				if humanoid.Health > 0 then
-					
-					-- Проверяем, что это “враждебный NPC” (например, в 99 Nights их можно пометить через тег)
+				if v.Humanoid.Health > 0 then
 					if not v:FindFirstChild("ESP") then
 						local box = Instance.new("BoxHandleAdornment", v)
 						box.Name = "ESP"
