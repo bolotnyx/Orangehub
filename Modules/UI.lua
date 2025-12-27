@@ -1,4 +1,3 @@
-
 -- Очистка старого UI перед запуском
 if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
     game.CoreGui["OrangeHub_V4"]:Destroy() 
