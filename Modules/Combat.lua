@@ -1,13 +1,12 @@
 local CombatModule = {
     KillAura = false,
-    Range = 25 -- Теперь можно даже чуть дальше
+    Range = 20
 }
 
 local LP = game.Players.LocalPlayer
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
--- Функция поиска ближайшей цели
-local function getClosest()
+local function getTarget()
     local closest, dist = nil, CombatModule.Range
     for _, v in ipairs(workspace:GetDescendants()) do
         if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v:FindFirstChildOfClass("Humanoid").Health > 0 then
@@ -28,46 +27,36 @@ local function getClosest()
     return closest
 end
 
--- СЕРЬЕЗНЫЙ ВЗЛОМ ЛОГИКИ (Raycast Hook)
-local oldNamecall
-oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
-    local method = getnamecallmethod()
-    local args = {...}
-
-    if CombatModule.KillAura and method == "Raycast" then
-        local target = getClosest()
-        if target and target:FindFirstChild("Head") then
-            -- Подменяем направление луча так, чтобы он всегда попадал в голову моба
-            args[2] = (target.Head.Position - args[1]).Unit * 1000
-            return oldNamecall(self, unpack(args))
-        end
-    end
-    return oldNamecall(self, ...)
-end)
-
--- Цикл авто-атаки
 task.spawn(function()
     while true do
-        task.wait(0.1)
-        if CombatModule.KillAura and LP.Character then
-            local target = getClosest()
-            if target then
-                local tool = LP.Character:FindFirstChildOfClass("Tool")
-                if tool then
-                    -- 1. Визуальный поворот (обязателен для сервера)
-                    local tRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
-                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(LP.Character.HumanoidRootPart.Position, 
-                        Vector3.new(tRoot.Position.X, LP.Character.HumanoidRootPart.Position.Y, tRoot.Position.Z))
-                    
-                    -- 2. Активация инструмента
-                    tool:Activate()
-                    
-                    -- 3. Прямой вызов всех событий (на всякий случай)
-                    for _, r in ipairs(tool:GetDescendants()) do
-                        if r:IsA("RemoteEvent") then 
-                            r:FireServer(target)
-                            r:FireServer(target:FindFirstChildOfClass("Humanoid"))
-                        end
+        task.wait(0.1) -- Максимальная скорость
+        if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local target = getTarget()
+            local tool = LP.Character:FindFirstChildOfClass("Tool")
+            
+            if target and tool then
+                local tRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+                local myRoot = LP.Character.HumanoidRootPart
+                
+                -- СОХРАНЯЕМ ПОЗИЦИЮ МОБА
+                local oldPos = tRoot.CFrame
+                
+                -- 1. ТЕЛЕПОРТИРУЕМ МОБА ПРЯМО ПЕРЕД СОБОЙ
+                tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3) 
+                
+                -- 2. УДАР
+                tool:Activate()
+                
+                -- 3. МОМЕНТАЛЬНО ВОЗВРАЩАЕМ МОБА (чтобы сервер не заподозрил ТП)
+                task.delay(0.05, function()
+                    if tRoot then tRoot.CFrame = oldPos end
+                end)
+                
+                -- Дополнительно: спамим активацию, если есть тачи
+                for _, part in ipairs(tool:GetDescendants()) do
+                    if part:IsA("TouchTransmitter") then
+                        firetouchinterest(tRoot, part.Parent, 0)
+                        firetouchinterest(tRoot, part.Parent, 1)
                     end
                 end
             end
