@@ -6,56 +6,57 @@ local FlyModule = {
 local LP = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
--- Основной цикл полета
 RunService.Stepped:Connect(function()
-    if FlyModule.Enabled then
-        local Char = LP.Character
-        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-        local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
-        local Camera = workspace.CurrentCamera
+    local Char = LP.Character
+    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+    local Camera = workspace.CurrentCamera
 
-        if Root and Hum then
-            -- Создаем или берем существующие силы
-            local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
-            local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
+    if FlyModule.Enabled and Root and Hum then
+        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
+        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
 
-            BV.Name = "FlyVelocity"
-            BG.Name = "FlyGyro"
+        BV.Name = "FlyVelocity"
+        BG.Name = "FlyGyro"
+        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        BG.D = 50
+        
+        Hum.PlatformStand = true
 
-            -- Настройки сил
-            BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-            BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-            BG.D = 50
+        -- РАСЧЕТ ДВИЖЕНИЯ
+        if Hum.MoveDirection.Magnitude > 0 then
+            -- Определяем направление относительно экрана
+            -- На мобилках: MoveDirection.Z < 0 это "вперед" (джойстик вверх)
+            -- MoveDirection.X > 0 это "вправо"
             
-            -- Отключаем стандартную физику
-            Hum.PlatformStand = true
-
-            -- УПРАВЛЕНИЕ
-            if Hum.MoveDirection.Magnitude > 0 then
-                -- Мы берем направление джойстика и ПЕРЕНОСИМ его на наклон камеры
-                -- Это Самый стабильный метод для мобилок
-                local camCF = Camera.CFrame
-                local moveDir = (camCF.RightVector * Hum.MoveDirection.X) + (camCF.LookVector * -Hum.MoveDirection.Z)
-                
-                BV.Velocity = moveDir.Unit * FlyModule.Speed
-                BG.CFrame = CFrame.new(Root.Position, Root.Position + moveDir)
-            else
-                -- Зависаем в воздухе
-                BV.Velocity = Vector3.new(0, 0, 0)
-                BG.CFrame = Camera.CFrame
-            end
+            local camCF = Camera.CFrame
+            local lv = camCF.LookVector
+            local rv = camCF.RightVector
+            
+            -- Вычисляем вектор:
+            -- Берем "вперед" камеры и умножаем на силу наклона джойстика по вертикали
+            -- Берем "право" камеры и умножаем на силу наклона джойстика по горизонтали
+            -- Используем локальные координаты джойстика (ControlModule), но так как мы 
+            -- работаем с Hum.MoveDirection, нам нужно просто "отвязать" его от мировых координат
+            
+            -- Самый стабильный способ для мобилок:
+            local rawMove = camCF:VectorToObjectSpace(Hum.MoveDirection)
+            local finalDir = (camCF.LookVector * -rawMove.Z) + (camCF.RightVector * rawMove.X)
+            
+            BV.Velocity = finalDir.Unit * FlyModule.Speed
+            BG.CFrame = camCF
+        else
+            BV.Velocity = Vector3.new(0, 0, 0)
+            BG.CFrame = camCF
         end
     else
-        -- Очистка при выключении
-        local Char = LP.Character
-        if Char and Char:FindFirstChild("HumanoidRootPart") then
-            local Root = Char.HumanoidRootPart
+        -- Очистка
+        if Root then
             if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
             if Root:FindFirstChild("FlyGyro") then Root.FlyGyro:Destroy() end
-            if Char:FindFirstChildOfClass("Humanoid") then
-                Char:FindFirstChildOfClass("Humanoid").PlatformStand = false
-            end
         end
+        if Hum then Hum.PlatformStand = false end
     end
 end)
 
