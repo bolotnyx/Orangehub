@@ -1,3 +1,8 @@
+-- Проверка на дубликаты (чтобы не запускалось 100 раз)
+if game.CoreGui:FindFirstChild("OrangeHub_V4") then
+    game.CoreGui:FindFirstChild("OrangeHub_V4"):Destroy()
+end
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
@@ -13,28 +18,27 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Верхняя декоративная линия
+-- Оранжевая полоска
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 Accent.BorderSizePixel = 0
-Accent.ZIndex = 5 -- Всегда сверху
+Accent.ZIndex = 5
 Instance.new("UICorner", Accent)
 
--- КНОПКА ЗАКРЫТИЯ (Уменьшена и отодвинута)
+-- КНОПКА ЗАКРЫТИЯ
 local Collapse = Instance.new("TextButton", Main)
-Collapse.Size = UDim2.new(0, 26, 0, 26) -- Чуть меньше
-Collapse.Position = UDim2.new(1, -32, 0, 8) -- Поправлена позиция
+Collapse.Size = UDim2.new(0, 26, 0, 26)
+Collapse.Position = UDim2.new(1, -32, 0, 8)
 Collapse.BackgroundColor3 = Color3.fromRGB(45, 45, 47)
 Collapse.Text = "—"
 Collapse.TextColor3 = Color3.new(1, 1, 1)
 Collapse.Font = Enum.Font.GothamBold
 Collapse.TextSize = 14
-Collapse.ZIndex = 10 -- Чтобы кнопки функций не могли её закрыть
-local collCorner = Instance.new("UICorner", Collapse)
-collCorner.CornerRadius = UDim.new(0, 5)
+Collapse.ZIndex = 10
+Instance.new("UICorner", Collapse).CornerRadius = UDim.new(0, 5)
 
--- КНОПКА ОТКРЫТИЯ (Тот самый апельсин)
+-- КНОПКА ОТКРЫТИЯ (Апельсин)
 local OpenBtn = Instance.new("TextButton", gui)
 OpenBtn.Size = UDim2.new(0, 50, 0, 50)
 OpenBtn.Position = UDim2.new(0, 20, 0.5, -25)
@@ -45,13 +49,14 @@ OpenBtn.Visible = false
 OpenBtn.Active = true
 OpenBtn.Draggable = true
 
+-- Анимация апельсина
 task.spawn(function()
     while true do
         if OpenBtn.Visible then
-            OpenBtn:TweenSize(UDim2.new(0, 58, 0, 58), "Out", "Sine", 1, true)
-            task.wait(1)
-            OpenBtn:TweenSize(UDim2.new(0, 48, 0, 48), "Out", "Sine", 1, true)
-            task.wait(1)
+            OpenBtn:TweenSize(UDim2.new(0, 55, 0, 55), "Out", "Sine", 0.8, true)
+            task.wait(0.8)
+            OpenBtn:TweenSize(UDim2.new(0, 45, 0, 45), "Out", "Sine", 0.8, true)
+            task.wait(0.8)
         else task.wait(1) end
     end
 end)
@@ -75,10 +80,9 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
 Title.BackgroundTransparency = 1
 
--- КОНТЕЙНЕР ДЛЯ ФУНКЦИЙ (Ограничен по высоте, чтобы не лез на кнопку закрытия)
 local Container = Instance.new("ScrollingFrame", Main)
-Container.Size = UDim2.new(1, -165, 1, -55) -- Увеличил отступ снизу и сверху
-Container.Position = UDim2.new(0, 155, 0, 45) -- Спустил ниже (было 20)
+Container.Size = UDim2.new(1, -165, 1, -60)
+Container.Position = UDim2.new(0, 155, 0, 50)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
@@ -86,7 +90,7 @@ Container.ZIndex = 2
 local ContainerList = Instance.new("UIListLayout", Container)
 ContainerList.Padding = UDim.new(0, 10)
 
--- Функция создания Тогглов
+-- Функция создания кнопок (Тогглов)
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 42)
@@ -115,11 +119,13 @@ local function createToggle(name, callback)
         enabled = not enabled
         dot:TweenPosition(enabled and UDim2.new(1, -13, 0.5, -5) or UDim2.new(0, 3, 0.5, -5), "Out", "Quad", 0.2)
         indicator.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(60, 60, 60)
-        callback(enabled)
+        
+        -- Вызов функции модуля
+        if callback then callback(enabled) end
     end)
 end
 
--- Вкладки
+-- ВКЛАДКИ
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, -10, 1, -70)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
@@ -139,12 +145,20 @@ local function addTab(name)
     t.MouseButton1Click:Connect(function()
         for _, v in ipairs(Container:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
         if name == "Combat" then
-            createToggle("KillAura", function(v) if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end end)
+            createToggle("KillAura", function(v) 
+                if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end 
+            end)
         elseif name == "Player" then
-            createToggle("Auto Tree Farm", function(v) if _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end end)
-            createToggle("Auto Log Farm", function(v) if _G.Modules["Player"] then _G.Modules["Player"].AutoLog = v end end)
+            createToggle("Auto Tree Farm", function(v) 
+                if _G.Modules and _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end 
+            end)
+            createToggle("Auto Log Farm", function(v) 
+                if _G.Modules and _G.Modules["Player"] then _G.Modules["Player"].AutoLog = v end 
+            end)
         elseif name == "ESP" then
-            createToggle("Player ESP", function(v) if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end end)
+            createToggle("Player ESP", function(v) 
+                if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end 
+            end)
         end
     end)
 end
@@ -153,4 +167,5 @@ addTab("Combat")
 addTab("Player")
 addTab("ESP")
 
+-- ВАЖНО: возвращаем объект, чтобы loadstring завершился успешно
 return gui
