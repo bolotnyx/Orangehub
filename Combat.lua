@@ -1,0 +1,2 @@
+-- Legit AutoAttack (NO EXPLOITS)
+-- Does NOT bypass server checks
