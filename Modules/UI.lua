@@ -3,45 +3,38 @@ gui.Name = "OrangeHubGUI"
 gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
--- ГЛАВНЫЙ ФРЕЙМ (Меню)
+-- ГЛАВНЫЙ ФРЕЙМ
 local mainFrame = Instance.new("Frame", gui)
-mainFrame.Size = UDim2.new(0, 420, 0, 320)
-mainFrame.Position = UDim2.new(0.5, -210, 0.5, -160)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30) -- Темно-серый, не черный
-mainFrame.BorderSizePixel = 0
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35) -- Темно-серый
+mainFrame.BorderSizePixel = 2
+mainFrame.BorderColor3 = Color3.fromRGB(255, 165, 0) -- Оранжевая рамка
 mainFrame.Active = true
 mainFrame.Draggable = true
-local mainCorner = Instance.new("UICorner", mainFrame)
-mainCorner.CornerRadius = UDim.new(0, 10)
+mainFrame.ZIndex = 1
 
--- Верхняя полоска (Заголовок)
-local topBar = Instance.new("Frame", mainFrame)
-topBar.Size = UDim2.new(1, 0, 0, 40)
-topBar.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-topBar.BorderSizePixel = 0
-local topCorner = Instance.new("UICorner", topBar)
-
-local title = Instance.new("TextLabel", topBar)
-title.Size = UDim2.new(1, -40, 1, 0)
-title.Position = UDim2.new(0, 15, 0, 0)
-title.Text = "🍊 OrangeHub | 99 Nights"
+-- ЗАГОЛОВОК
+local title = Instance.new("TextLabel", mainFrame)
+title.Size = UDim2.new(1, 0, 0, 40)
+title.Position = UDim2.new(0, 0, 0, 0)
+title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+title.Text = "🍊 ORANGE HUB"
 title.TextColor3 = Color3.fromRGB(255, 165, 0)
-title.TextXAlignment = Enum.TextXAlignment.Left
 title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.BackgroundTransparency = 1
+title.TextSize = 20
+title.ZIndex = 2
 
--- Кнопка сворачивания (—)
-local collapseBtn = Instance.new("TextButton", topBar)
+-- КНОПКА СВЕРНУТЬ
+local collapseBtn = Instance.new("TextButton", mainFrame)
 collapseBtn.Size = UDim2.new(0, 30, 0, 30)
 collapseBtn.Position = UDim2.new(1, -35, 0, 5)
 collapseBtn.Text = "—"
-collapseBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+collapseBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 collapseBtn.TextColor3 = Color3.new(1, 1, 1)
-collapseBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", collapseBtn)
+collapseBtn.ZIndex = 3
 
--- Кнопка открытия (АПЕЛЬСИН)
+-- КНОПКА ОТКРЫТИЯ (АПЕЛЬСИН)
 local openBtn = Instance.new("TextButton", gui)
 openBtn.Size = UDim2.new(0, 50, 0, 50)
 openBtn.Position = UDim2.new(0, 20, 0.5, -25)
@@ -49,9 +42,8 @@ openBtn.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 openBtn.Text = "🍊"
 openBtn.TextSize = 30
 openBtn.Visible = false
-openBtn.Draggable = true
-local openCorner = Instance.new("UICorner", openBtn)
-openCorner.CornerRadius = UDim.new(1, 0)
+openBtn.ZIndex = 10
+Instance.new("UICorner", openBtn)
 
 collapseBtn.MouseButton1Click:Connect(function()
     mainFrame.Visible = false
@@ -63,80 +55,55 @@ openBtn.MouseButton1Click:Connect(function()
     openBtn.Visible = false
 end)
 
--- Левая панель (Кнопки вкладок)
-local sidePanel = Instance.new("Frame", mainFrame)
-sidePanel.Size = UDim2.new(0, 110, 1, -50)
-sidePanel.Position = UDim2.new(0, 5, 0, 45)
-sidePanel.BackgroundTransparency = 1
+-- КОНТЕЙНЕР ДЛЯ КНОПОК (Чтобы не сливались с фоном)
+local contentFrame = Instance.new("ScrollingFrame", mainFrame)
+contentFrame.Size = UDim2.new(1, -20, 1, -60)
+contentFrame.Position = UDim2.new(0, 10, 0, 50)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel = 0
+contentFrame.CanvasSize = UDim2.new(0, 0, 2, 0) -- Можно скроллить
+contentFrame.ZIndex = 2
 
--- Центральная панель (Контент)
-local centerPanel = Instance.new("Frame", mainFrame)
-centerPanel.Size = UDim2.new(1, -125, 1, -55)
-centerPanel.Position = UDim2.new(0, 120, 0, 50)
-centerPanel.BackgroundColor3 = Color3.fromRGB(20, 20, 20) -- Сделал чуть темнее для контраста
-local centerCorner = Instance.new("UICorner", centerPanel)
-
-local function clearCenter()
-    for _, v in ipairs(centerPanel:GetChildren()) do
-        if not v:IsA("UICorner") then v:Destroy() end
-    end
-end
-
-local function createMenuButton(name, pos, callback)
-    local btn = Instance.new("TextButton", centerPanel)
-    btn.Size = UDim2.new(1, -10, 0, 35)
+local function createButton(name, pos, callback)
+    local btn = Instance.new("TextButton", contentFrame)
+    btn.Size = UDim2.new(1, 0, 0, 40)
     btn.Position = pos
     btn.Text = name
-    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 13
+    btn.ZIndex = 3
     Instance.new("UICorner", btn)
     
     local enabled = false
     btn.MouseButton1Click:Connect(function()
         enabled = not enabled
-        btn.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 45)
+        btn.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(50, 50, 50)
         callback(enabled)
     end)
 end
 
--- Вкладки
-local tabs = {"Combat", "Player", "ESP"}
-for i, name in ipairs(tabs) do
-    local tabBtn = Instance.new("TextButton", sidePanel)
-    tabBtn.Size = UDim2.new(1, 0, 0, 40)
-    tabBtn.Position = UDim2.new(0, 0, 0, (i-1)*45)
-    tabBtn.Text = name
-    tabBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    tabBtn.TextColor3 = Color3.new(1, 1, 1)
-    tabBtn.Font = Enum.Font.GothamBold
-    Instance.new("UICorner", tabBtn)
-    
-    tabBtn.MouseButton1Click:Connect(function()
-        clearCenter()
-        if name == "Combat" then
-            createMenuButton("KillAura", UDim2.new(0, 5, 0, 10), function(v)
-                if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
-            end)
-        elseif name == "Player" then
-            createMenuButton("Auto Tree Farm", UDim2.new(0, 5, 0, 10), function(v)
-                if _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end
-            end)
-            createMenuButton("Auto Log Farm", UDim2.new(0, 5, 0, 55), function(v)
-                if _G.Modules["Player"] then _G.Modules["Player"].AutoLog = v end
-            end)
-            createMenuButton("WalkSpeed (100)", UDim2.new(0, 5, 0, 100), function(v)
-                local h = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
-                if h then h.WalkSpeed = v and 100 or 16 end
-            end)
-        elseif name == "ESP" then
-            createMenuButton("Toggle ESP", UDim2.new(0, 5, 0, 10), function(v)
-                if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
-            end)
-        end
-    end)
-end
+-- СРАЗУ ВЫВОДИМ ВСЕ КНОПКИ (Без вкладок, чтобы не было черных панелей)
+createButton("Auto Tree Farm", UDim2.new(0, 0, 0, 0), function(v)
+    if _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end
+end)
 
-print("🍊 OrangeHub UI Refined")
+createButton("Auto Log Farm", UDim2.new(0, 0, 0, 50), function(v)
+    if _G.Modules["Player"] then _G.Modules["Player"].AutoLog = v end
+end)
+
+createButton("KillAura", UDim2.new(0, 0, 0, 100), function(v)
+    if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+end)
+
+createButton("Speed x2", UDim2.new(0, 0, 0, 150), function(v)
+    local h = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    if h then h.WalkSpeed = v and 80 or 16 end
+end)
+
+createButton("Toggle ESP", UDim2.new(0, 0, 0, 200), function(v)
+    if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
+end)
+
+print("🍊 OrangeHub UI Simplified & Fixed")
 return gui
