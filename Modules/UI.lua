@@ -1,4 +1,3 @@
--- Modules/UI.lua
 local gui = Instance.new("ScreenGui")
 gui.Name = "OrangeHubGUI"
 gui.ResetOnSpawn = false
@@ -16,29 +15,32 @@ Instance.new("UICorner", mainFrame)
 -- Заголовок
 local title = Instance.new("TextLabel", mainFrame)
 title.Size = UDim2.new(1,0,0,30)
-title.Text = "🍊 OrangeHub"
+title.Text = "🍊 OrangeHub | 99 Nights"
 title.BackgroundTransparency = 1
 title.TextColor3 = Color3.fromRGB(255,165,0)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 
--- Сворачивание
-local collapse = Instance.new("TextButton", mainFrame)
-collapse.Size = UDim2.new(0,30,0,30)
-collapse.Position = UDim2.new(1,-35,0,0)
-collapse.Text = "—"
-collapse.BackgroundColor3 = Color3.fromRGB(35,35,35)
-collapse.TextColor3 = Color3.new(1,1,1)
-collapse.Font = Enum.Font.GothamBold
-collapse.TextSize = 18
-collapse.ZIndex = 10
-Instance.new("UICorner", collapse)
-
-local collapsed = false
-collapse.MouseButton1Click:Connect(function()
-	collapsed = not collapsed
-	mainFrame.Visible = not collapsed
-end)
+-- Функция создания кнопок в центре (универсальная)
+local function createMenuButton(name, pos, callback)
+    local btn = Instance.new("TextButton", centerPanel)
+    btn.Size = UDim2.new(0,180,0,35)
+    btn.Position = pos
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn)
+    
+    local enabled = false
+    btn.MouseButton1Click:Connect(function()
+        enabled = not enabled
+        btn.BackgroundColor3 = enabled and Color3.fromRGB(255,165,0) or Color3.fromRGB(50,50,50)
+        callback(enabled)
+    end)
+    return btn
+end
 
 -- Правая панель вкладок
 local rightPanel = Instance.new("Frame", mainFrame)
@@ -48,7 +50,7 @@ rightPanel.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Instance.new("UICorner", rightPanel)
 
 -- Центральная панель
-local centerPanel = Instance.new("Frame", mainFrame)
+centerPanel = Instance.new("Frame", mainFrame)
 centerPanel.Size = UDim2.new(1,-100,1,0)
 centerPanel.Position = UDim2.new(0,0,0,0)
 centerPanel.BackgroundColor3 = Color3.fromRGB(30,30,30)
@@ -56,83 +58,63 @@ Instance.new("UICorner", centerPanel)
 
 -- Вкладки
 local tabs = {"Combat","Player","ESP"}
-local buttons = {}
 
 local function clearCenter()
-	for _,v in ipairs(centerPanel:GetChildren()) do
-		v:Destroy()
-	end
+    for _,v in ipairs(centerPanel:GetChildren()) do
+        if not v:IsA("UICorner") then v:Destroy() end
+    end
 end
 
 local function createTabButton(name, position)
-	local btn = Instance.new("TextButton", rightPanel)
-	btn.Size = UDim2.new(1,0,0,40)
-	btn.Position = position
-	btn.Text = name
-	btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-	btn.TextColor3 = Color3.fromRGB(255,255,255)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 16
-	Instance.new("UICorner", btn)
-	buttons[name] = btn
-	return btn
+    local btn = Instance.new("TextButton", rightPanel)
+    btn.Size = UDim2.new(1,0,0,45)
+    btn.Position = position
+    btn.Text = name
+    btn.BackgroundColor3 = Color3.fromRGB(45,45,45)
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    Instance.new("UICorner", btn)
+    return btn
 end
 
 for i,name in ipairs(tabs) do
-	local btn = createTabButton(name, UDim2.new(0,0,0,(i-1)*50))
-	btn.MouseButton1Click:Connect(function()
-		clearCenter()
-		if name == "Combat" then
-			local killBtn = Instance.new("TextButton", centerPanel)
-			killBtn.Size = UDim2.new(0,150,0,30)
-			killBtn.Position = UDim2.new(0.5,-75,0,50)
-			killBtn.Text = "KillAura"
-			killBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-			killBtn.TextColor3 = Color3.fromRGB(255,255,255)
-			killBtn.Font = Enum.Font.GothamBold
-			killBtn.TextSize = 14
-			Instance.new("UICorner", killBtn)
-			killBtn.MouseButton1Click:Connect(function()
-				local combat = _G.Modules and _G.Modules["Combat"]
-				if combat then
-					combat.KillAura = not combat.KillAura
-				end
-			end)
-		elseif name == "Player" then
-			local speedBtn = Instance.new("TextButton", centerPanel)
-			speedBtn.Size = UDim2.new(0,150,0,30)
-			speedBtn.Position = UDim2.new(0.5,-75,0,50)
-			speedBtn.Text = "Speed x2"
-			speedBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-			speedBtn.TextColor3 = Color3.fromRGB(255,255,255)
-			speedBtn.Font = Enum.Font.GothamBold
-			speedBtn.TextSize = 14
-			Instance.new("UICorner", speedBtn)
-			speedBtn.MouseButton1Click:Connect(function()
-				local player = _G.Modules and _G.Modules["Player"]
-				if player and player.Humanoid then
-					player.Humanoid.WalkSpeed = 50
-				end
-			end)
-		elseif name == "ESP" then
-			local espBtn = Instance.new("TextButton", centerPanel)
-			espBtn.Size = UDim2.new(0,150,0,30)
-			espBtn.Position = UDim2.new(0.5,-75,0,50)
-			espBtn.Text = "Toggle ESP"
-			espBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
-			espBtn.TextColor3 = Color3.fromRGB(255,255,255)
-			espBtn.Font = Enum.Font.GothamBold
-			espBtn.TextSize = 14
-			Instance.new("UICorner", espBtn)
-			espBtn.MouseButton1Click:Connect(function()
-				local esp = _G.Modules and _G.Modules["ESP"]
-				if esp then
-					esp.Enabled = not esp.Enabled
-				end
-			end)
-		end
-	end)
+    local btn = createTabButton(name, UDim2.new(0,0,0,(i-1)*50))
+    btn.MouseButton1Click:Connect(function()
+        clearCenter()
+        
+        if name == "Combat" then
+            createMenuButton("KillAura", UDim2.new(0.5,-90,0,40), function(val)
+                local m = _G.Modules["Combat"]
+                if m then m.KillAura = val end
+            end)
+
+        elseif name == "Player" then
+            createMenuButton("Auto Tree Farm", UDim2.new(0.5,-90,0,40), function(val)
+                local m = _G.Modules["Player"]
+                if m then m.AutoTree = val end
+            end)
+            
+            createMenuButton("Auto Log Farm", UDim2.new(0.5,-90,0,85), function(val)
+                local m = _G.Modules["Player"]
+                if m then m.AutoLog = val end
+            end)
+
+            createMenuButton("Speed Hack (100)", UDim2.new(0.5,-90,0,130), function(val)
+                local char = game.Players.LocalPlayer.Character
+                if char and char:FindFirstChild("Humanoid") then
+                    char.Humanoid.WalkSpeed = val and 100 or 16
+                end
+            end)
+
+        elseif name == "ESP" then
+            createMenuButton("Toggle ESP", UDim2.new(0.5,-90,0,40), function(val)
+                local m = _G.Modules["ESP"]
+                if m then m.Enabled = val end
+            end)
+        end
+    end)
 end
 
-print("UI module loaded")
+print("🍊 OrangeHub UI Loaded")
 return gui
