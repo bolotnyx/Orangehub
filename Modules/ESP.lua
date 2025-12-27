@@ -1,62 +1,72 @@
 local ESPModule = {
-    Enabled = false,
-    ItemsEnabled = false,
-    NPCEnabled = false
+    Enabled = false
 }
 
--- Названия из твоей игры (замени на актуальные, если нужно)
-local teleportTargets = {"Stick", "Stone", "Mushroom", "Wood", "Berry"} -- Пример предметов
-local AimbotTargets = {"Monster", "Zombie", "Bear"} -- Пример NPC
+-- Функция проверки: является ли объект чем-то важным?
+local function isImportant(obj)
+    -- Если имя уже в списке известных
+    local targets = {"Berry", "Stick", "Stone", "Mushroom", "Wood", "Monster", "Chest"}
+    if table.find(targets, obj.Name) then return true end
 
-local function createItemESP(item)
-    if not item:IsA("BasePart") and not item:IsA("Model") then return end
+    -- Умная проверка: если в объекте есть ClickDetector или ProximityPrompt (значит можно нажать)
+    if obj:FindFirstChildWhichIsA("ClickDetector") or obj:FindFirstChildWhichIsA("ProximityPrompt") then
+        return true
+    end
     
-    -- Billboard (Текст)
-    if not item:FindFirstChild("ESP_Billboard") then
-        local billboard = Instance.new("BillboardGui", item)
-        billboard.Name = "ESP_Billboard"
-        billboard.Size = UDim2.new(0, 50, 0, 20)
-        billboard.AlwaysOnTop = true
-        billboard.StudsOffset = Vector3.new(0, 2, 0)
-
-        local label = Instance.new("TextLabel", billboard)
-        label.Size = UDim2.new(1, 0, 1, 0)
-        label.Text = item.Name
-        label.BackgroundTransparency = 1
-        label.TextColor3 = Color3.fromRGB(255, 165, 0) -- Оранжевый
-        label.TextStrokeTransparency = 0
-        label.TextScaled = true
+    -- Если это модель и у неё есть имя, отличное от "Model" или "Part"
+    if obj:IsA("Model") and obj.Name ~= "Model" and obj.Name ~= "Workspace" then
+        -- Игнорируем игрока
+        if game.Players:GetPlayerFromCharacter(obj) then return false end
+        return true
     end
 
-    -- Highlight (Подсветка)
-    if not item:FindFirstChild("ESP_Highlight") then
-        local highlight = Instance.new("Highlight", item)
-        highlight.Name = "ESP_Highlight"
-        highlight.FillColor = Color3.fromRGB(255, 165, 0)
-        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-        highlight.FillTransparency = 0.5
-        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    end
+    return false
 end
 
--- Функция очистки
-local function clearESP(item)
-    if item:FindFirstChild("ESP_Billboard") then item.ESP_Billboard:Destroy() end
-    if item:FindFirstChild("ESP_Highlight") then item.ESP_Highlight:Destroy() end
+local function createESP(item)
+    if item:FindFirstChild("ESP_Highlight") then return end
+
+    local h = Instance.new("Highlight")
+    h.Name = "ESP_Highlight"
+    h.FillColor = Color3.fromRGB(255, 165, 0)
+    h.OutlineColor = Color3.new(1, 1, 1)
+    h.FillTransparency = 0.4
+    h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    h.Parent = item
+
+    local b = Instance.new("BillboardGui")
+    b.Name = "ESP_Billboard"
+    b.Size = UDim2.new(0, 100, 0, 30)
+    b.AlwaysOnTop = true
+    b.StudsOffset = Vector3.new(0, 3, 0)
+    
+    local l = Instance.new("TextLabel", b)
+    l.Size = UDim2.new(1, 0, 1, 0)
+    l.Text = item.Name
+    l.TextColor3 = Color3.new(1, 1, 1)
+    l.BackgroundTransparency = 1
+    l.TextScaled = true
+    l.Font = Enum.Font.GothamBold
+    
+    b.Parent = item
 end
 
--- Основной цикл переключения
+-- Цикл сканирования мира
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(3) do -- Раз в 3 секунды, чтобы не лагало на телефоне
         if ESPModule.Enabled then
-            for _, obj in ipairs(workspace:GetDescendants()) do
-                if table.find(teleportTargets, obj.Name) or table.find(AimbotTargets, obj.Name) then
-                    createItemESP(obj)
+            for _, obj in ipairs(workspace:GetChildren()) do
+                -- Проверяем объекты в корне workspace
+                if isImportant(obj) then
+                    createESP(obj)
                 end
             end
         else
+            -- Удаляем всё при выключении
             for _, obj in ipairs(workspace:GetDescendants()) do
-                clearESP(obj)
+                if obj.Name == "ESP_Highlight" or obj.Name == "ESP_Billboard" then
+                    obj:Destroy()
+                end
             end
         end
     end
