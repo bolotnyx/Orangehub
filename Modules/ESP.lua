@@ -2,37 +2,42 @@ local ESPModule = {
     Enabled = false
 }
 
--- Игнорируем технические объекты и спавнеры
+-- ПОЛНЫЙ СПИСОК ИСКЛЮЧЕНИЙ (то, что НЕ подсвечиваем)
 local ignoreList = {
     "ProximityAttachment", "TouchInterest", "Attachment", "Model", "Part",
-    "wolf spawner", "wolf respawner", "wolf head", "bunny burrow", "Burrow"
+    "wolf spawner", "wolf respawner", "wolf head", "bunny burrow", "Burrow",
+    "Wolf Spawn", "Alpha Wolf Spawn", "Bear Spawn", "Any Wolf Spawn", 
+    "Wolf Spawn No Respawn", "Alpha Wolf Spawn No Respawn", "Bear Spawn No Respawn"
 }
 
 local function createESP(item)
-    -- Проверка на игнор-лист (учитываем регистр и пробелы)
+    -- Проверка по списку исключений
     local nameLower = item.Name:lower()
     for _, ignore in ipairs(ignoreList) do
-        if nameLower:find(ignore:lower()) then return end
+        if nameLower == ignore:lower() or nameLower:find(ignore:lower()) then 
+            return 
+        end
     end
     
     if item:FindFirstChild("ESP_Highlight") then return end
 
-    -- Определяем цвет
     local espColor = Color3.fromRGB(255, 165, 0) -- Оранжевый (Ресурсы)
     
-    -- Определяем врагов (Красный)
+    -- КАТЕГОРИЯ: ВРАГИ (Красный цвет)
     local isEnemy = item.Name:find("Wolf") or 
                     item.Name:find("Bunny") or 
                     item.Name:find("Cultist") or 
                     item.Name:find("Bear") or 
                     item.Name:find("Alpha") or
+                    item.Name:find("Культист") or
+                    item.Name:find("Медведь") or
                     item:FindFirstChildOfClass("Humanoid")
 
     if isEnemy then
         espColor = Color3.fromRGB(255, 50, 50)
     end
 
-    -- Подсветка
+    -- Подсветка (Highlight)
     local h = Instance.new("Highlight")
     h.Name = "ESP_Highlight"
     h.FillColor = espColor
@@ -41,12 +46,12 @@ local function createESP(item)
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     h.Parent = item
 
-    -- Текст
+    -- Текст (Billboard)
     local b = Instance.new("BillboardGui")
     b.Name = "ESP_Billboard"
-    b.Size = UDim2.new(0, 80, 0, 20)
+    b.Size = UDim2.new(0, 100, 0, 25)
     b.AlwaysOnTop = true
-    b.StudsOffset = Vector3.new(0, 3, 0)
+    b.StudsOffset = Vector3.new(0, 3.5, 0)
     
     local l = Instance.new("TextLabel", b)
     l.Size = UDim2.new(1, 0, 1, 0)
@@ -67,12 +72,13 @@ local function scan()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") or obj:IsA("BasePart") then
             local n = obj.Name
-            -- Важные объекты: монстры, ресурсы на русском и новые цели
-            local isImportant = n:find("Wolf") or n:find("Bunny") or n:find("Журнал") or 
-                                n:find("Ягода") or n:find("руда") or n:find("Alpha") or
-                                n:find("Cultist") or n:find("Bear") or n:find("Медведь")
+            
+            -- Проверяем, является ли объект важным (Враг или Ресурс)
+            local isTarget = n:find("Wolf") or n:find("Bunny") or n:find("Cultist") or 
+                             n:find("Bear") or n:find("Культист") or n:find("Медведь") or
+                             n:find("Журнал") or n:find("Ягода") or n:find("руда")
 
-            if isImportant then
+            if isTarget then
                 createESP(obj)
             end
         end
@@ -84,6 +90,7 @@ task.spawn(function()
         if ESPModule.Enabled then
             scan()
         else
+            -- Удаление при выключении
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj.Name == "ESP_Highlight" or obj.Name == "ESP_Billboard" then
                     obj:Destroy()
