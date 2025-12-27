@@ -60,7 +60,7 @@ Container.ScrollBarThickness = 2
 Container.ZIndex = 2
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- Функция создания тоггла
+-- Функция создания тоггла (Переключателя)
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -95,25 +95,22 @@ local function createToggle(name, callback)
     end)
 end
 
--- Логика переключения контента (ВКЛАДКИ)
+-- ЛОГИКА ВКЛАДОК
 local function showTab(name)
+    -- Очищаем текущие кнопки
     for _, v in ipairs(Container:GetChildren()) do 
         if v:IsA("TextButton") then v:Destroy() end 
     end
     
     if name == "Player" then
-        -- Скорость
+        -- Speed Hack
         createToggle("Speed Hack", function(v) 
             game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 
         end)
 
-        -- НОВАЯ КНОПКА: ПОЛЕТ
+        -- Fly
         createToggle("Fly (Joystick)", function(v)
-            if _G.Modules["Fly"] then 
-                _G.Modules["Fly"].Enabled = v 
-            else
-                warn("Модуль Fly не найден!")
-            end
+            if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v else warn("Fly module missing") end
         end)
 
         -- Anti-AFK
@@ -121,19 +118,33 @@ local function showTab(name)
             if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
         end)
 
-        -- Автофарм
+        -- Auto Farm
         createToggle("Auto Tree Farm", function(v)
             if _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end
         end)
 
     elseif name == "Combat" then
+        -- ESP ГЛАВНЫЙ
+        createToggle("ESP Master", function(v)
+            if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v else warn("ESP module missing") end
+        end)
+
+        createToggle("ESP Boxes", function(v)
+            if _G.Modules["ESP"] then _G.Modules["ESP"].Boxes = v end
+        end)
+
+        createToggle("ESP Names", function(v)
+            if _G.Modules["ESP"] then _G.Modules["ESP"].Names = v end
+        end)
+
+        -- Kill Aura (если есть)
         createToggle("KillAura", function(v)
             if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
     end
 end
 
--- Функция создания кнопок сайдбара
+-- Создание кнопок в Сайдбаре
 local function addSidebarButton(name)
     local t = Instance.new("TextButton", TabHolder)
     t.Size = UDim2.new(1, 0, 0, 40)
@@ -146,7 +157,7 @@ local function addSidebarButton(name)
     t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
--- КНОПКА ЗАКРЫТИЯ (—)
+-- Кнопка сворачивания (—)
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
@@ -160,6 +171,8 @@ Instance.new("UICorner", Collapse).CornerRadius = UDim.new(0, 6)
 -- Инициализация разделов
 addSidebarButton("Player")
 addSidebarButton("Combat")
+
+-- Открываем первую вкладку по умолчанию
 showTab("Player")
 
 -- КНОПКА ОТКРЫТИЯ (🍊)
