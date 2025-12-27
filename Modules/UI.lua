@@ -8,7 +8,7 @@ gui.Parent = game.CoreGui
 local mainFrame = Instance.new("Frame", gui)
 mainFrame.Size = UDim2.new(0,400,0,300)
 mainFrame.Position = UDim2.new(0.5,-200,0.5,-150)
-mainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+mainFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
 mainFrame.Active = true
 mainFrame.Draggable = true
 Instance.new("UICorner", mainFrame)
@@ -35,37 +35,35 @@ collapse.ZIndex = 10
 Instance.new("UICorner", collapse)
 
 local collapsed = false
-local originalSize = mainFrame.Size
 collapse.MouseButton1Click:Connect(function()
 	collapsed = not collapsed
-	if collapsed then
-		mainFrame.Size = UDim2.new(mainFrame.Size.X.Scale, mainFrame.Size.X.Offset, 0, 30)
-		collapse.Text = "+"
-	else
-		mainFrame.Size = originalSize
-		collapse.Text = "—"
-	end
+	mainFrame.Visible = not collapsed
 end)
 
--- Правая панель
+-- Правая панель вкладок
 local rightPanel = Instance.new("Frame", mainFrame)
 rightPanel.Size = UDim2.new(0,100,1,0)
 rightPanel.Position = UDim2.new(1,-100,0,0)
-rightPanel.BackgroundColor3 = Color3.fromRGB(30,30,30)
+rightPanel.BackgroundColor3 = Color3.fromRGB(35,35,35)
 Instance.new("UICorner", rightPanel)
 
--- Центр
+-- Центральная панель
 local centerPanel = Instance.new("Frame", mainFrame)
 centerPanel.Size = UDim2.new(1,-100,1,0)
-centerPanel.BackgroundColor3 = Color3.fromRGB(25,25,25)
+centerPanel.Position = UDim2.new(0,0,0,0)
+centerPanel.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Instance.new("UICorner", centerPanel)
 
--- Таблицы
+-- Вкладки
 local tabs = {"Combat","Player","ESP"}
 local buttons = {}
-local currentTab = nil
 
--- Создание кнопок вкладок
+local function clearCenter()
+	for _,v in ipairs(centerPanel:GetChildren()) do
+		v:Destroy()
+	end
+end
+
 local function createTabButton(name, position)
 	local btn = Instance.new("TextButton", rightPanel)
 	btn.Size = UDim2.new(1,0,0,40)
@@ -80,19 +78,9 @@ local function createTabButton(name, position)
 	return btn
 end
 
-local function clearCenter()
-	for _,v in ipairs(centerPanel:GetChildren()) do
-		if v:IsA("TextButton") or v:IsA("TextLabel") then
-			v:Destroy()
-		end
-	end
-end
-
--- Создание вкладок
 for i,name in ipairs(tabs) do
 	local btn = createTabButton(name, UDim2.new(0,0,0,(i-1)*50))
 	btn.MouseButton1Click:Connect(function()
-		currentTab = name
 		clearCenter()
 		if name == "Combat" then
 			local killBtn = Instance.new("TextButton", centerPanel)
@@ -105,10 +93,9 @@ for i,name in ipairs(tabs) do
 			killBtn.TextSize = 14
 			Instance.new("UICorner", killBtn)
 			killBtn.MouseButton1Click:Connect(function()
-				local combatModule = _G.Modules and _G.Modules["Combat"]
-				if combatModule then
-					combatModule.KillAura = not combatModule.KillAura
-					print("KillAura:", combatModule.KillAura)
+				local combat = _G.Modules and _G.Modules["Combat"]
+				if combat then
+					combat.KillAura = not combat.KillAura
 				end
 			end)
 		elseif name == "Player" then
@@ -122,11 +109,9 @@ for i,name in ipairs(tabs) do
 			speedBtn.TextSize = 14
 			Instance.new("UICorner", speedBtn)
 			speedBtn.MouseButton1Click:Connect(function()
-				local playerModule = _G.Modules and _G.Modules["Player"]
-				if playerModule and playerModule.Humanoid then
-					playerModule.Speed = 50
-					playerModule.Humanoid.WalkSpeed = playerModule.Speed
-					print("Speed set to 50")
+				local player = _G.Modules and _G.Modules["Player"]
+				if player and player.Humanoid then
+					player.Humanoid.WalkSpeed = 50
 				end
 			end)
 		elseif name == "ESP" then
@@ -140,15 +125,14 @@ for i,name in ipairs(tabs) do
 			espBtn.TextSize = 14
 			Instance.new("UICorner", espBtn)
 			espBtn.MouseButton1Click:Connect(function()
-				local espModule = _G.Modules and _G.Modules["ESP"]
-				if espModule ~= nil then
-					espModule.Enabled = not espModule.Enabled
-					print("ESP toggled:", espModule.Enabled)
+				local esp = _G.Modules and _G.Modules["ESP"]
+				if esp then
+					esp.Enabled = not esp.Enabled
 				end
 			end)
 		end
 	end)
 end
 
-print("UI module loaded with tabs")
+print("UI module loaded")
 return gui
