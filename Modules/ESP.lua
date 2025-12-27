@@ -2,35 +2,37 @@ local ESPModule = {
     Enabled = false
 }
 
--- Твой уточненный список имен
-local targets = {
-    "log", "Log", "CrashingUFOs", "Berry", "Stick", "Stone", "Mushroom", 
-    "Flint", "Apple", "Rock", "Chest", "Box"
-}
+-- Игнорируем технический мусор
+local ignoreList = {"ProximityAttachment", "TouchInterest", "Attachment", "Model", "Part"}
 
 local function createESP(item)
-    -- Не создаем дубликаты
+    -- Если это техническая деталь из списка игнора - выходим
+    if table.find(ignoreList, item.Name) then return end
     if item:FindFirstChild("ESP_Highlight") then return end
 
-    -- Определяем, что подсвечивать (модель или деталь)
-    local adornee = item:IsA("Model") and (item.PrimaryPart or item:FindFirstChildWhichIsA("BasePart")) or item
-    if not adornee then return end
+    -- Определяем цвет
+    local espColor = Color3.fromRGB(255, 165, 0) -- По умолчанию оранжевый (ресурсы)
+    
+    -- Если это монстр (Wolf, Bunny и т.д.) - делаем красным
+    if item:FindFirstChildOfClass("Humanoid") or item.Name:find("Wolf") or item.Name:find("Bunny") then
+        espColor = Color3.fromRGB(255, 50, 50)
+    end
 
-    -- Подсветка (Highlight)
+    -- Подсветка
     local h = Instance.new("Highlight")
     h.Name = "ESP_Highlight"
-    h.FillColor = Color3.fromRGB(255, 165, 0)
+    h.FillColor = espColor
     h.OutlineColor = Color3.new(1, 1, 1)
-    h.FillTransparency = 0.4
+    h.FillTransparency = 0.5
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     h.Parent = item
 
-    -- Надпись (Billboard)
+    -- Текст (Billboard)
     local b = Instance.new("BillboardGui")
     b.Name = "ESP_Billboard"
-    b.Size = UDim2.new(0, 100, 0, 30)
+    b.Size = UDim2.new(0, 80, 0, 20)
     b.AlwaysOnTop = true
-    b.StudsOffset = Vector3.new(0, 3, 0)
+    b.StudsOffset = Vector3.new(0, 3, 0) -- Поднимаем надпись выше
     
     local l = Instance.new("TextLabel", b)
     l.Size = UDim2.new(1, 0, 1, 0)
@@ -39,6 +41,7 @@ local function createESP(item)
     l.BackgroundTransparency = 1
     l.TextScaled = true
     l.Font = Enum.Font.GothamBold
+    l.TextStrokeTransparency = 0.5
     l.Parent = b
     
     b.Parent = item
@@ -47,35 +50,28 @@ end
 -- Функция сканирования
 local function scan()
     if not ESPModule.Enabled then return end
-
-    -- Используем GetDescendants, чтобы найти предметы в глубоких папках
+    
     for _, obj in ipairs(workspace:GetDescendants()) do
-        -- 1. Проверка по списку имен (для логов, костров и т.д.)
-        if table.find(targets, obj.Name) then
-            createESP(obj)
-        end
-
-        -- 2. Проверка на мобов (если это модель с ХП и не игрок)
-        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
-            if not game.Players:GetPlayerFromCharacter(obj) then
-                createESP(obj)
+        -- Подсвечиваем всё, что имеет осмысленное название и не в игноре
+        if obj:IsA("Model") or obj:IsA("BasePart") then
+            -- Проверяем, не пустая ли это модель и нет ли её в игноре
+            if obj.Name:len() > 3 and not table.find(ignoreList, obj.Name) then
+                -- Подсвечиваем только то, что является либо мобом, либо ресурсом (Журнал, Ягода, Wolf и т.д.)
+                local n = obj.Name
+                if n:find("Wolf") or n:find("Bunny") or n:find("Журнал") or n:find("Ягода") or n:find("руда") or n:find("Alpha") then
+                    createESP(obj)
+                end
             end
-        end
-        
-        -- 3. Проверка на кликабельные предметы (на всякий случай)
-        if obj:FindFirstChildWhichIsA("ProximityPrompt") or obj:FindFirstChildWhichIsA("ClickDetector") then
-            createESP(obj)
         end
     end
 end
 
--- Цикл работы
+-- Цикл
 task.spawn(function()
     while task.wait(3) do
         if ESPModule.Enabled then
             scan()
         else
-            -- Чистим всё при выключении
             for _, obj in ipairs(workspace:GetDescendants()) do
                 if obj.Name == "ESP_Highlight" or obj.Name == "ESP_Billboard" then
                     obj:Destroy()
