@@ -3,8 +3,8 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local LP = Players.LocalPlayer
-local Character = LP.Character or LP.CharacterAdded:Wait()
-local HumanoidRoot = Character:WaitForChild("HumanoidRootPart")
+local Char = LP.Character or LP.CharacterAdded:Wait()
+local HRP = Char:WaitForChild("HumanoidRootPart")
 
 local Combat = {}
 Combat.KillAura = false
@@ -12,10 +12,13 @@ Combat.Radius = 15
 
 local function getNPCs()
 	local npcs = {}
-	for _,v in ipairs(workspace:GetDescendants()) do
-		if v:IsA("Model") and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
-			if not Players:GetPlayerFromCharacter(v) and v.Humanoid.Health > 0 then
-				table.insert(npcs,v)
+	local enemiesFolder = workspace:FindFirstChild("Enemies") -- измени на папку с NPC
+	if enemiesFolder then
+		for _,v in ipairs(enemiesFolder:GetChildren()) do
+			if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") then
+				if v.Humanoid.Health > 0 then
+					table.insert(npcs,v)
+				end
 			end
 		end
 	end
@@ -24,10 +27,10 @@ end
 
 RunService.Heartbeat:Connect(function()
 	if not Combat.KillAura then return end
-	local tool = Character:FindFirstChildOfClass("Tool")
+	local tool = Char:FindFirstChildOfClass("Tool")
 	if not tool then return end
 	for _,npc in ipairs(getNPCs()) do
-		if (npc.HumanoidRootPart.Position - HumanoidRoot.Position).Magnitude <= Combat.Radius then
+		if (npc.HumanoidRootPart.Position - HRP.Position).Magnitude <= Combat.Radius then
 			pcall(function()
 				tool:Activate()
 			end)
