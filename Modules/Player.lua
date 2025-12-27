@@ -1,40 +1,42 @@
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
-local VIM = game:GetService("VirtualInputManager")
-
-local PlayerFuncs = {
-    AutoLog = false,
+local PlayerModule = {
     AutoTree = false,
-    LogBagType = 5 -- Вместимость мешка
+    AutoLog = false
 }
 
--- Функция нажатия клавиш
-local function press(key)
-    VIM:SendKeyEvent(true, Enum.KeyCode[key], false, game)
-    task.wait(0.05)
-    VIM:SendKeyEvent(false, Enum.KeyCode[key], false, game)
+local LP = game.Players.LocalPlayer
+local VIM = game:GetService("VirtualInputManager")
+
+-- Функция клика
+local function click()
+    VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+    task.wait(0.1)
+    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0)
 end
 
--- Логика сбора логов (твой рабочий метод)
+-- Цикл работы
 task.spawn(function()
     while true do
-        task.wait(1)
-        if PlayerFuncs.AutoLog and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local log = nil
-            for _, v in pairs(workspace:GetDescendants()) do
-                if v.Name == "Log" then log = v; break end
-            end
-            
-            if log then
-                LP.Character:PivotTo(log:GetPivot() * CFrame.new(0, 2, 0))
-                task.wait(0.5)
-                for i=1, PlayerFuncs.LogBagType do
-                    press("F") press("E") task.wait(0.1)
+        task.wait(0.3)
+        
+        -- Логика авто-рубки деревьев
+        if PlayerModule.AutoTree and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            for _, trunk in pairs(workspace:GetDescendants()) do
+                if trunk.Name == "Trunk" and trunk.Parent and trunk.Parent.Name == "Small Tree" then
+                    if not PlayerModule.AutoTree then break end
+                    
+                    -- Телепорт к дереву
+                    LP.Character:PivotTo(trunk.CFrame * CFrame.new(0, 2, 0))
+                    
+                    -- Рубим дерево
+                    while PlayerModule.AutoTree and trunk.Parent and trunk.Parent.Name == "Small Tree" do
+                        click()
+                        task.wait(0.3)
+                    end
                 end
-                LP.Character:PivotTo(CFrame.new(0, 10, 0)) -- К костру
             end
         end
     end
 end)
 
-return PlayerFuncs
+print("🍊 [OrangeHub]: Player Module Logic Loaded")
+return PlayerModule
