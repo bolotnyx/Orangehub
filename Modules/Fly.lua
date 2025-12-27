@@ -26,21 +26,29 @@ task.spawn(function()
                 BG.D = 10
             end
             
-            -- Управление через джойстик/клавиши (MoveDirection)
+            -- ГЛАВНОЕ ИСПРАВЛЕНИЕ:
+            -- Отключаем падение и ходьбу, чтобы персонаж не "бегал"
             if Hum then
-                -- Если джойстик не трогают, персонаж просто висит (Velocity = 0)
-                -- Если джойстик отклонен, летим в сторону направления движения
+                Hum.PlatformStand = true -- Отключает стандартную физику ходьбы
+                
+                -- Движение по направлению джойстика
                 BV.Velocity = Hum.MoveDirection * FlyModule.Speed
                 
-                -- Поворачиваем персонажа лицом туда, куда он летит (если движется)
+                -- Поворот персонажа
                 if Hum.MoveDirection.Magnitude > 0 then
                     BG.CFrame = CFrame.new(Root.Position, Root.Position + Hum.MoveDirection)
+                else
+                    BG.CFrame = CFrame.new(Root.Position, Root.Position + Root.CFrame.LookVector)
                 end
             end
         else
-            -- Удаляем силы, если выключили полет
+            -- Возвращаем всё как было, когда выключаем
             if BV then BV:Destroy() BV = nil end
             if BG then BG:Destroy() BG = nil end
+            
+            if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
+                LP.Character:FindFirstChildOfClass("Humanoid").PlatformStand = false
+            end
         end
     end)
 end)
