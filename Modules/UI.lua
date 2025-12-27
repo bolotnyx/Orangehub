@@ -22,7 +22,7 @@ title.TextColor3 = Color3.fromRGB(255,165,0)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 
--- Сворачиваемая кнопка
+-- Сворачивание
 local collapse = Instance.new("TextButton", mainFrame)
 collapse.Size = UDim2.new(0,30,0,30)
 collapse.Position = UDim2.new(1,-35,0,0)
@@ -31,6 +31,7 @@ collapse.BackgroundColor3 = Color3.fromRGB(35,35,35)
 collapse.TextColor3 = Color3.new(1,1,1)
 collapse.Font = Enum.Font.GothamBold
 collapse.TextSize = 18
+collapse.ZIndex = 10
 Instance.new("UICorner", collapse)
 
 local collapsed = false
@@ -46,25 +47,25 @@ collapse.MouseButton1Click:Connect(function()
 	end
 end)
 
--- Правая панель для вкладок
+-- Правая панель
 local rightPanel = Instance.new("Frame", mainFrame)
 rightPanel.Size = UDim2.new(0,100,1,0)
 rightPanel.Position = UDim2.new(1,-100,0,0)
 rightPanel.BackgroundColor3 = Color3.fromRGB(30,30,30)
 Instance.new("UICorner", rightPanel)
 
--- Центральная панель
+-- Центр
 local centerPanel = Instance.new("Frame", mainFrame)
 centerPanel.Size = UDim2.new(1,-100,1,0)
 centerPanel.BackgroundColor3 = Color3.fromRGB(25,25,25)
 Instance.new("UICorner", centerPanel)
 
--- Таб переключения
+-- Таблицы
 local tabs = {"Combat","Player","ESP"}
 local buttons = {}
 local currentTab = nil
 
--- Функция для создания кнопок вкладок
+-- Создание кнопок вкладок
 local function createTabButton(name, position)
 	local btn = Instance.new("TextButton", rightPanel)
 	btn.Size = UDim2.new(1,0,0,40)
@@ -79,7 +80,6 @@ local function createTabButton(name, position)
 	return btn
 end
 
--- Центровка контента
 local function clearCenter()
 	for _,v in ipairs(centerPanel:GetChildren()) do
 		if v:IsA("TextButton") or v:IsA("TextLabel") then
@@ -88,7 +88,7 @@ local function clearCenter()
 	end
 end
 
--- Добавляем кнопки вкладок
+-- Создание вкладок
 for i,name in ipairs(tabs) do
 	local btn = createTabButton(name, UDim2.new(0,0,0,(i-1)*50))
 	btn.MouseButton1Click:Connect(function()
@@ -123,7 +123,7 @@ for i,name in ipairs(tabs) do
 			Instance.new("UICorner", speedBtn)
 			speedBtn.MouseButton1Click:Connect(function()
 				local playerModule = _G.Modules and _G.Modules["Player"]
-				if playerModule then
+				if playerModule and playerModule.Humanoid then
 					playerModule.Speed = 50
 					playerModule.Humanoid.WalkSpeed = playerModule.Speed
 					print("Speed set to 50")
@@ -142,8 +142,8 @@ for i,name in ipairs(tabs) do
 			espBtn.MouseButton1Click:Connect(function()
 				local espModule = _G.Modules and _G.Modules["ESP"]
 				if espModule ~= nil then
-					espModule = not espModule
-					print("ESP toggled")
+					espModule.Enabled = not espModule.Enabled
+					print("ESP toggled:", espModule.Enabled)
 				end
 			end)
 		end
