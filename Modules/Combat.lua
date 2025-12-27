@@ -1,43 +1,32 @@
 local CombatModule = {
     KillAura = false,
-    Range = 20
+    Range = 18
 }
 
 local LP = game.Players.LocalPlayer
 local Vim = game:GetService("VirtualInputManager")
 
--- Список для поиска (упрощенный)
-local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь", "Журнал"}
+local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
 local function getTarget()
     local char = LP.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    
-    local closest = nil
-    local lastDist = CombatModule.Range
+    local closest, lastDist = nil, CombatModule.Range
 
-    -- Ищем во всем Workspace
     for _, obj in ipairs(workspace:GetDescendants()) do
-        -- Ищем среди Моделей или Деталей
         if obj:IsA("Model") or obj:IsA("BasePart") then
-            local name = obj.Name
             local isEnemy = false
-            
             for _, eName in ipairs(enemies) do
-                if name:find(eName) then
-                    isEnemy = true
-                    break
-                end
+                if obj.Name:find(eName) then isEnemy = true break end
             end
             
             if isEnemy and not game.Players:GetPlayerFromCharacter(obj) then
-                -- Пытаемся найти позицию объекта
                 local pos = (obj:IsA("Model") and (obj.PrimaryPart or obj:FindFirstChildWhichIsA("BasePart"))) or obj
                 if pos then
                     local dist = (char.HumanoidRootPart.Position - pos.Position).Magnitude
                     if dist < lastDist then
                         lastDist = dist
-                        closest = pos
+                        closest = obj -- Берем саму модель
                     end
                 end
             end
@@ -47,28 +36,41 @@ local function getTarget()
 end
 
 task.spawn(function()
-    while task.wait(0.2) do
+    while task.wait(0.15) do -- Чуть быстрее атака
         if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local targetPart = getTarget()
+            local target = getTarget()
             
-            if targetPart then
-                -- 1. Разворот персонажа к цели
+            if target then
                 local root = LP.Character.HumanoidRootPart
+                local targetPart = target:IsA("Model") and (target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")) or target
+                
+                -- 1. Точный разворот
                 root.CFrame = CFrame.new(root.Position, Vector3.new(targetPart.Position.X, root.Position.Y, targetPart.Position.Z))
 
-                -- 2. Берем инструмент
-                local tool = LP.Character:FindFirstChildOfClass("Tool") or LP.Backpack:FindFirstChildOfClass("Tool")
-                if tool and tool.Parent ~= LP.Character then
-                    tool.Parent = LP.Character
+                -- 2. Работа с инструментом
+                local tool = LP.Character:FindFirstChildOfClass("Tool")
+                if not tool then
+                    tool = LP.Backpack:FindFirstChildOfClass("Tool")
+                    if tool then tool.Parent = LP.Character end
                 end
 
-                -- 3. Кликаем (пробуем все способы сразу)
                 if tool then
+                    -- МЕТОД 1: Стандартная активация
                     tool:Activate()
-                    -- Эмуляция тапа по центру экрана (для мобилок)
-                    Vim:SendMouseButtonEvent(500, 500, 0, true, game, 1)
-                    task.wait(0.01)
-                    Vim:SendMouseButtonEvent(500, 500, 0, false, game, 1)
+
+                    -- МЕТОД 2: Поиск RemoteEvent внутри инструмента (самый эффективный)
+                    for _, child in ipairs(tool:GetDescendants()) do
+                        if child:IsA("RemoteEvent") or child:IsA("UnreliableRemoteEvent") then
+                            -- Пробуем отправить сигнал атаки серверу
+                            child:FireServer(targetPart.Position) 
+                            child:FireServer(target) -- Некоторые игры требуют саму модель
+                        end
+                    end
+
+                    -- МЕТОД 3: Эмуляция тапа по кнопке атаки (координаты типичной мобильной кнопки)
+                    Vim:SendMouseButtonEvent(800, 400, 0, true, game, 1)
+                    task.wait(0.02)
+                    Vim:SendMouseButtonEvent(800, 400, 0, false, game, 1)
                 end
             end
         end
