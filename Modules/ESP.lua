@@ -1,80 +1,65 @@
 local ESPModule = {
     Enabled = false,
-    Boxes = true,
-    Names = true
+    ItemsEnabled = false,
+    NPCEnabled = false
 }
 
-local LP = game.Players.LocalPlayer
-local Camera = workspace.CurrentCamera
-local RunService = game:GetService("RunService")
+-- Названия из твоей игры (замени на актуальные, если нужно)
+local teleportTargets = {"Stick", "Stone", "Mushroom", "Wood", "Berry"} -- Пример предметов
+local AimbotTargets = {"Monster", "Zombie", "Bear"} -- Пример NPC
 
--- Функция для отрисовки ESP на одном игроке
-local function createESP(player)
-    local box = Instance.new("Frame")
-    local nameTag = Instance.new("TextLabel")
-    local drawing = Instance.new("ScreenGui", game.CoreGui)
-    drawing.Name = "ESP_" .. player.Name
+local function createItemESP(item)
+    if not item:IsA("BasePart") and not item:IsA("Model") then return end
+    
+    -- Billboard (Текст)
+    if not item:FindFirstChild("ESP_Billboard") then
+        local billboard = Instance.new("BillboardGui", item)
+        billboard.Name = "ESP_Billboard"
+        billboard.Size = UDim2.new(0, 50, 0, 20)
+        billboard.AlwaysOnTop = true
+        billboard.StudsOffset = Vector3.new(0, 2, 0)
 
-    -- Настройка бокса
-    box.BackgroundTransparency = 1
-    box.BorderColor3 = Color3.fromRGB(255, 165, 0) -- Оранжевый стиль OrangeHub
-    box.BorderSizePixel = 2
-    box.Visible = false
-    box.Parent = drawing
+        local label = Instance.new("TextLabel", billboard)
+        label.Size = UDim2.new(1, 0, 1, 0)
+        label.Text = item.Name
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(255, 165, 0) -- Оранжевый
+        label.TextStrokeTransparency = 0
+        label.TextScaled = true
+    end
 
-    -- Настройка ника
-    nameTag.BackgroundTransparency = 1
-    nameTag.TextColor3 = Color3.new(1, 1, 1)
-    nameTag.Font = Enum.Font.GothamBold
-    nameTag.TextSize = 12
-    nameTag.Visible = false
-    nameTag.Parent = drawing
+    -- Highlight (Подсветка)
+    if not item:FindFirstChild("ESP_Highlight") then
+        local highlight = Instance.new("Highlight", item)
+        highlight.Name = "ESP_Highlight"
+        highlight.FillColor = Color3.fromRGB(255, 165, 0)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.FillTransparency = 0.5
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    end
+end
 
-    local connection
-    connection = RunService.RenderStep:Connect(function()
-        if not ESPModule.Enabled or not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
-            box.Visible = false
-            nameTag.Visible = false
-            if not player.Parent then connection:Disconnect() drawing:Destroy() end
-            return
-        end
+-- Функция очистки
+local function clearESP(item)
+    if item:FindFirstChild("ESP_Billboard") then item.ESP_Billboard:Destroy() end
+    if item:FindFirstChild("ESP_Highlight") then item.ESP_Highlight:Destroy() end
+end
 
-        local root = player.Character.HumanoidRootPart
-        local pos, onScreen = Camera:WorldToViewportPoint(root.Position)
-
-        if onScreen then
-            -- Рассчитываем размер квадрата в зависимости от дистанции
-            local size = (Camera.CFrame.Position - root.Position).Magnitude
-            local scale = (1 / size) * 1000
-            
-            if ESPModule.Boxes then
-                box.Visible = true
-                box.Size = UDim2.new(0, scale * 1.5, 0, scale * 2)
-                box.Position = UDim2.new(0, pos.X - box.Size.X.Offset / 2, 0, pos.Y - box.Size.Y.Offset / 2)
-            else
-                box.Visible = false
-            end
-
-            if ESPModule.Names then
-                nameTag.Visible = true
-                nameTag.Text = player.Name .. " [" .. math.floor(size) .. "m]"
-                nameTag.Position = UDim2.new(0, pos.X, 0, pos.Y - (box.Size.Y.Offset / 2) - 15)
-            else
-                nameTag.Visible = false
+-- Основной цикл переключения
+task.spawn(function()
+    while task.wait(1) do
+        if ESPModule.Enabled then
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if table.find(teleportTargets, obj.Name) or table.find(AimbotTargets, obj.Name) then
+                    createItemESP(obj)
+                end
             end
         else
-            box.Visible = false
-            nameTag.Visible = false
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                clearESP(obj)
+            end
         end
-    end)
-end
-
--- Следим за новыми игроками
-for _, p in ipairs(game.Players:GetPlayers()) do
-    if p ~= LP then createESP(p) end
-end
-game.Players.PlayerAdded:Connect(function(p)
-    if p ~= LP then createESP(p) end
+    end
 end)
 
 return ESPModule
