@@ -1,67 +1,64 @@
 local CombatModule = {
     KillAura = false,
-    Range = 16
+    Range = 20
 }
 
 local LP = game.Players.LocalPlayer
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
-local function getTarget()
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    local closest, dist = nil, CombatModule.Range
-
+-- ФУНКЦИЯ УВЕЛИЧЕНИЯ ХИТБОКСОВ (Глобальный метод)
+local function expandHitboxes()
     for _, obj in ipairs(workspace:GetDescendants()) do
         if obj:IsA("Model") then
             local isEnemy = false
             for _, name in ipairs(enemies) do
                 if obj.Name:find(name) then isEnemy = true break end
             end
-            
-            if isEnemy and not game.Players:GetPlayerFromCharacter(obj) then
-                local tPart = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChildWhichIsA("BasePart")
-                if tPart then
-                    local d = (LP.Character.HumanoidRootPart.Position - tPart.Position).Magnitude
-                    if d < dist then
-                        dist = d
-                        closest = obj
+
+            if isEnemy then
+                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                if root then
+                    -- Если аура включена, раздуваем хитбокс до гигантских размеров
+                    if CombatModule.KillAura then
+                        root.Size = Vector3.new(15, 15, 15)
+                        root.Transparency = 0.7 -- Слегка подсветим зону попадания
+                        root.CanCollide = false
+                    else
+                        -- Возвращаем как было
+                        root.Size = Vector3.new(2, 2, 1)
+                        root.Transparency = 0
                     end
                 end
             end
         end
     end
-    return closest
 end
 
+-- Основной цикл атаки
 task.spawn(function()
     while true do
-        task.wait(0.1) -- Максимально быстрая проверка
+        task.wait(0.2)
         if CombatModule.KillAura and LP.Character then
-            local target = getTarget()
-            if target then
-                local tool = LP.Character:FindFirstChildOfClass("Tool")
-                local tPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChildWhichIsA("BasePart")
-                
-                if tPart then
-                    -- 1. Принудительный взгляд на врага
-                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(
-                        LP.Character.HumanoidRootPart.Position, 
-                        Vector3.new(tPart.Position.X, LP.Character.HumanoidRootPart.Position.Y, tPart.Position.Z)
-                    )
+            -- 1. Раздуваем хитбоксы врагов поблизости
+            expandHitboxes()
 
-                    if tool then
-                        -- МЕТОД: Спам всех найденных Remote-событий в инструменте
-                        -- Многие мобильные игры называют их 'Handle', 'Attack', 'Hit' или 'Action'
-                        for _, remote in ipairs(tool:GetDescendants()) do
-                            if remote:IsA("RemoteEvent") then
-                                -- Отправляем данные серверу: либо саму модель, либо позицию
-                                remote:FireServer(target)
-                                remote:FireServer(tPart.Position)
-                                remote:FireServer(target:FindFirstChildOfClass("Humanoid"))
-                            end
-                        end
-                        -- Визуальный взмах
-                        tool:Activate()
+            -- 2. Берем инструмент и машем
+            local tool = LP.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                tool:Activate()
+                
+                -- Попытка найти глобальное событие урона в игре
+                local rs = game:GetService("ReplicatedStorage")
+                local attackRemotes = {
+                    rs:FindFirstChild("Attack"),
+                    rs:FindFirstChild("Hit"),
+                    rs:FindFirstChild("Damage")
+                }
+                
+                for _, remote in ipairs(attackRemotes) do
+                    if remote and remote:IsA("RemoteEvent") then
+                        -- Пытаемся отправить сигнал атаки "в воздух" перед собой
+                        remote:FireServer() 
                     end
                 end
             end
