@@ -5,56 +5,49 @@ local FlyModule = {
 
 local LP = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
-local Camera = workspace.CurrentCamera
 
-RunService.RenderStep:Connect(function()
-    local Char = LP.Character
-    if FlyModule.Enabled and Char and Char:FindFirstChild("HumanoidRootPart") then
-        local Root = Char.HumanoidRootPart
-        local Hum = Char:FindFirstChildOfClass("Humanoid")
-        
-        -- Получаем или создаем силы
-        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
-        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
-        
-        BV.Name = "FlyVelocity"
-        BG.Name = "FlyGyro"
-        
-        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-        BG.D = 50 
-        
-        Hum.PlatformStand = true
-        
-        -- Направление камеры
-        local camCF = Camera.CFrame
-        
-        -- Если джойстик двигается
-        if Hum.MoveDirection.Magnitude > 0 then
-            -- Вычисляем вектор на основе того, КУДА МЫ ЖМЕМ на джойстике
-            -- относительно того, КУДА СМОТРИТ КАМЕРА
-            local direction = camCF:VectorToWorldSpace(Vector3.new(
-                Hum.MoveDirection:Dot(camCF.RightVector),
-                0, 
-                -Hum.MoveDirection:Dot(camCF.LookVector)
-            ))
+-- Основной цикл полета
+RunService.Stepped:Connect(function()
+    if FlyModule.Enabled then
+        local Char = LP.Character
+        local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+        local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+        local Camera = workspace.CurrentCamera
+
+        if Root and Hum then
+            -- Создаем или берем существующие силы
+            local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
+            local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
+
+            BV.Name = "FlyVelocity"
+            BG.Name = "FlyGyro"
+
+            -- Настройки сил
+            BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+            BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+            BG.D = 50
             
-            -- Если нужно лететь вверх/вниз при наклоне камеры
-            -- Мы просто используем LookVector камеры напрямую
-            local finalVelocity = camCF.LookVector * (Hum.MoveDirection:Dot(camCF.LookVector) > 0 and 1 or -1)
-            
-            -- Упрощенная логика: летим ровно туда, куда направлен джойстик в 3D пространстве камеры
-            BV.Velocity = camCF:VectorToWorldSpace(Vector3.new(Hum.MoveDirection:Dot(camCF.RightVector), 0, -Hum.MoveDirection:Dot(camCF.LookVector))).Unit * FlyModule.Speed
-            
-            -- Плавный поворот персонажа по вектору движения
-            BG.CFrame = camCF
-        else
-            -- Замираем и не падаем
-            BV.Velocity = Vector3.new(0, 0, 0)
-            BG.CFrame = camCF
+            -- Отключаем стандартную физику
+            Hum.PlatformStand = true
+
+            -- УПРАВЛЕНИЕ
+            if Hum.MoveDirection.Magnitude > 0 then
+                -- Мы берем направление джойстика и ПЕРЕНОСИМ его на наклон камеры
+                -- Это Самый стабильный метод для мобилок
+                local camCF = Camera.CFrame
+                local moveDir = (camCF.RightVector * Hum.MoveDirection.X) + (camCF.LookVector * -Hum.MoveDirection.Z)
+                
+                BV.Velocity = moveDir.Unit * FlyModule.Speed
+                BG.CFrame = CFrame.new(Root.Position, Root.Position + moveDir)
+            else
+                -- Зависаем в воздухе
+                BV.Velocity = Vector3.new(0, 0, 0)
+                BG.CFrame = Camera.CFrame
+            end
         end
     else
-        -- Отключение
+        -- Очистка при выключении
+        local Char = LP.Character
         if Char and Char:FindFirstChild("HumanoidRootPart") then
             local Root = Char.HumanoidRootPart
             if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
