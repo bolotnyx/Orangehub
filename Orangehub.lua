@@ -1,13 +1,16 @@
 -- Orangehub.lua
 repeat task.wait() until game:IsLoaded()
 
+-- Очищаем старое, если было
+_G.Modules = nil
+task.wait(0.1)
+
 local Modules = {}
--- Добавляем метку времени, чтобы GitHub не выдавал старый код из кэша
 local cacheBuster = "?v=" .. tostring(math.random(1, 999999))
 local base = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/"
 
--- Список модулей для загрузки
-local moduleList = {"UI", "Combat", "ESP", "Player", "AntiAFK"}
+-- СПИСОК ИСПРАВЛЕН: UI теперь в самом конце
+local moduleList = {"Combat", "ESP", "Player", "AntiAFK", "UI"}
 
 for _, m in ipairs(moduleList) do
     local url = base .. m .. ".lua" .. cacheBuster
@@ -17,16 +20,13 @@ for _, m in ipairs(moduleList) do
     
     if ok then
         Modules[m] = mod
+        _G.Modules = Modules -- Обновляем глобальную таблицу после каждой загрузки
         print("🍊 [OrangeHub]: Loaded " .. m)
     else
         warn("🍊 [OrangeHub]: Failed to load " .. m .. " | Error: " .. tostring(mod))
     end
 end
 
--- Делаем модули доступными глобально для взаимодействия
-_G.Modules = Modules
-
--- Если UI загрузился, сообщаем об успехе
 if Modules["UI"] then
     print("🍊 OrangeHub initialized successfully!")
 else
