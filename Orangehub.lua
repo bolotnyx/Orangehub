@@ -10,7 +10,7 @@ local cacheBuster = "?v=" .. tostring(math.random(1, 999999))
 local base = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/"
 
 -- СПИСОК ИСПРАВЛЕН: UI теперь в самом конце
-local moduleList = {"Combat", "ESP", "Player", "AntiAFK", "UI"}
+local moduleList = {"Combat", "ESP", "Player", "AntiAFK", "Fly", "UI"}
 
 for _, m in ipairs(moduleList) do
     local url = base .. m .. ".lua" .. cacheBuster
