@@ -17,6 +17,25 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
+-- Оранжевая линия сверху
+local Accent = Instance.new("Frame", Main)
+Accent.Size = UDim2.new(1, 0, 0, 3)
+Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+Accent.ZIndex = 5
+Instance.new("UICorner", Accent)
+
+-- КНОПКА ЗАКРЫТИЯ (Красивая)
+local Collapse = Instance.new("TextButton", Main)
+Collapse.Size = UDim2.new(0, 26, 0, 26)
+Collapse.Position = UDim2.new(1, -32, 0, 8)
+Collapse.BackgroundColor3 = Color3.fromRGB(45, 45, 47)
+Collapse.Text = "—"
+Collapse.TextColor3 = Color3.new(1, 1, 1)
+Collapse.Font = Enum.Font.GothamBold
+Collapse.TextSize = 14
+Collapse.ZIndex = 10
+Instance.new("UICorner", Collapse).CornerRadius = UDim.new(0, 6)
+
 -- САЙДБАР
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 140, 1, 0)
@@ -34,16 +53,14 @@ Title.TextSize = 18
 Title.BackgroundTransparency = 1
 Title.ZIndex = 2
 
--- КОНТЕЙНЕР ДЛЯ ВКЛАДОК (СЛЕВА)
+-- КОНТЕЙНЕРЫ
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
 TabHolder.ZIndex = 2
-local TabLayout = Instance.new("UIListLayout", TabHolder)
-TabLayout.Padding = UDim.new(0, 5)
+Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
 
--- КОНТЕЙНЕР ДЛЯ ФУНКЦИЙ (СПРАВА)
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -160, 1, -70)
 Container.Position = UDim2.new(0, 150, 0, 55)
@@ -51,16 +68,15 @@ Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
 Container.ZIndex = 2
-local ContainerLayout = Instance.new("UIListLayout", Container)
-ContainerLayout.Padding = UDim.new(0, 10)
+Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- Функция создания Тоггла (справа)
+-- Функция тоггла
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
     btn.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
     btn.Text = "   " .. name
-    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 14
     btn.TextXAlignment = Enum.TextXAlignment.Left
@@ -90,66 +106,35 @@ local function createToggle(name, callback)
     end)
 end
 
--- Логика отрисовки контента
+-- Логика вкладок
 local function showTab(name)
-    for _, v in ipairs(Container:GetChildren()) do
-        if v:IsA("TextButton") then v:Destroy() end
-    end
-    
+    for _, v in ipairs(Container:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
     if name == "Player" then
-        createToggle("Speed Hack", function(v) 
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 
-        end)
-        createToggle("Auto Tree Farm", function(v) 
-            if _G.Modules and _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end 
-        end)
+        createToggle("Speed Hack", function(v) game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 end)
+        createToggle("Auto Tree Farm", function(v) if _G.Modules["Player"] then _G.Modules["Player"].AutoTree = v end end)
     elseif name == "Combat" then
-        createToggle("KillAura", function(v) 
-            if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end 
-        end)
-    elseif name == "ESP" then
-        createToggle("Player ESP", function(v) 
-            if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end 
-        end)
+        createToggle("KillAura", function(v) if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end end)
     end
 end
 
--- Функция создания кнопок-вкладок (слева)
 local function addSidebarButton(name)
     local t = Instance.new("TextButton", TabHolder)
-    t.Name = name .. "Tab"
-    t.Size = UDim2.new(1, 0, 0, 40) -- Сделал чуть выше
-    t.BackgroundColor3 = Color3.fromRGB(50, 50, 55) -- Более светлый фон, чтобы было видно
+    t.Size = UDim2.new(1, 0, 0, 40)
+    t.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     t.Text = name
-    t.TextColor3 = Color3.fromRGB(255, 255, 255) -- Ярко-белый текст
+    t.TextColor3 = Color3.new(1, 1, 1)
     t.Font = Enum.Font.GothamBold
     t.TextSize = 14
-    t.ZIndex = 5 -- Высокий приоритет видимости
+    t.ZIndex = 5
     Instance.new("UICorner", t)
-    
-    t.MouseButton1Click:Connect(function()
-        showTab(name)
-    end)
+    t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
--- Создаем кнопки разделов
 addSidebarButton("Player")
 addSidebarButton("Combat")
-addSidebarButton("ESP")
-
--- Сразу открываем первую вкладку
 showTab("Player")
 
--- Закрытие/Открытие
-local Collapse = Instance.new("TextButton", Main)
-Collapse.Size = UDim2.new(0, 30, 0, 30)
-Collapse.Position = UDim2.new(1, -35, 0, 8)
-Collapse.Text = "—"
-Collapse.TextColor3 = Color3.new(1, 1, 1)
-Collapse.BackgroundTransparency = 1
-Collapse.TextSize = 25
-Collapse.ZIndex = 10
-
+-- КНОПКА ОТКРЫТИЯ (АПЕЛЬСИН - ПЕРЕДВИГАЕМЫЙ)
 local OpenBtn = Instance.new("TextButton", gui)
 OpenBtn.Size = UDim2.new(0, 55, 0, 55)
 OpenBtn.Position = UDim2.new(0, 20, 0.5, -27)
@@ -157,7 +142,21 @@ OpenBtn.BackgroundTransparency = 1
 OpenBtn.Text = "🍊"
 OpenBtn.TextSize = 40
 OpenBtn.Visible = false
+OpenBtn.Active = true -- Важно для Draggable
+OpenBtn.Draggable = true -- Теперь можно двигать!
 OpenBtn.ZIndex = 10
+
+-- Анимация пульсации
+task.spawn(function()
+    while true do
+        if OpenBtn.Visible then
+            OpenBtn:TweenSize(UDim2.new(0, 60, 0, 60), "Out", "Sine", 0.8, true)
+            task.wait(0.8)
+            OpenBtn:TweenSize(UDim2.new(0, 50, 0, 50), "Out", "Sine", 0.8, true)
+            task.wait(0.8)
+        else task.wait(1) end
+    end
+end)
 
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
