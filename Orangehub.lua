@@ -16,7 +16,7 @@ for _,m in ipairs({"UI","Combat","ESP","Player"}) do
 	end
 end
 
--- Делаем модули глобальными для UI
+-- Глобальные модули для UI
 _G.Modules = Modules
 
 print("🍊 OrangeHub initialized")
