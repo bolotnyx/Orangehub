@@ -1,24 +1,34 @@
 local CombatModule = {
     KillAura = false,
-    Range = 20
+    Range = 18
 }
 
 local LP = game.Players.LocalPlayer
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
-local function getTarget()
+-- Чистая функция поиска без лишнего мусора
+local function findTarget()
+    local char = LP.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    
     local closest, dist = nil, CombatModule.Range
-    for _, v in ipairs(workspace:GetDescendants()) do
-        if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v:FindFirstChildOfClass("Humanoid").Health > 0 then
-            if not game.Players:GetPlayerFromCharacter(v) then
-                for _, name in ipairs(enemies) do
-                    if v.Name:find(name) then
-                        local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Head")
-                        if root then
-                            local d = (LP.Character.HumanoidRootPart.Position - root.Position).Magnitude
-                            if d < dist then dist = d closest = v end
-                        end
-                        break
+    local myPos = char.HumanoidRootPart.Position
+
+    -- Ищем только в workspace (не заходя слишком глубоко)
+    for _, obj in ipairs(workspace:GetChildren()) do
+        if obj:IsA("Model") and obj ~= char then
+            local isEnemy = false
+            for _, name in ipairs(enemies) do
+                if obj.Name:find(name) then isEnemy = true break end
+            end
+
+            if isEnemy then
+                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart")
+                if root then
+                    local d = (myPos - root.Position).Magnitude
+                    if d < dist then
+                        dist = d
+                        closest = obj
                     end
                 end
             end
@@ -29,34 +39,29 @@ end
 
 task.spawn(function()
     while true do
-        task.wait(0.1) -- Максимальная скорость
+        task.wait(0.2) -- Оптимальная задержка
+        
         if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local target = getTarget()
-            local tool = LP.Character:FindFirstChildOfClass("Tool")
+            local target = findTarget()
             
-            if target and tool then
-                local tRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
-                local myRoot = LP.Character.HumanoidRootPart
+            if target then
+                local tPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head") or target:FindFirstChildWhichIsA("BasePart")
+                local tool = LP.Character:FindFirstChildOfClass("Tool")
                 
-                -- СОХРАНЯЕМ ПОЗИЦИЮ МОБА
-                local oldPos = tRoot.CFrame
-                
-                -- 1. ТЕЛЕПОРТИРУЕМ МОБА ПРЯМО ПЕРЕД СОБОЙ
-                tRoot.CFrame = myRoot.CFrame * CFrame.new(0, 0, -3) 
-                
-                -- 2. УДАР
-                tool:Activate()
-                
-                -- 3. МОМЕНТАЛЬНО ВОЗВРАЩАЕМ МОБА (чтобы сервер не заподозрил ТП)
-                task.delay(0.05, function()
-                    if tRoot then tRoot.CFrame = oldPos end
-                end)
-                
-                -- Дополнительно: спамим активацию, если есть тачи
-                for _, part in ipairs(tool:GetDescendants()) do
-                    if part:IsA("TouchTransmitter") then
-                        firetouchinterest(tRoot, part.Parent, 0)
-                        firetouchinterest(tRoot, part.Parent, 1)
+                if tPart and tool then
+                    -- 1. ПОВОРОТ (обязательно через CFrame)
+                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(
+                        LP.Character.HumanoidRootPart.Position, 
+                        Vector3.new(tPart.Position.X, LP.Character.HumanoidRootPart.Position.Y, tPart.Position.Z)
+                    )
+
+                    -- 2. ВЗМАХ (через встроенную функцию топора)
+                    tool:Activate()
+                    
+                    -- 3. ПРЯМОЙ СИГНАЛ (если есть Remote)
+                    local remote = tool:FindFirstChildOfClass("RemoteEvent")
+                    if remote then
+                        remote:FireServer(target)
                     end
                 end
             end
