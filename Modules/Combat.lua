@@ -1,67 +1,70 @@
 local CombatModule = {
     KillAura = false,
-    Range = 18
+    Range = 25 -- Тот самый радиус из Moondate
 }
 
 local LP = game.Players.LocalPlayer
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
--- Чистая функция поиска без лишнего мусора
-local function findTarget()
+-- Функция для поиска ВСЕХ целей в радиусе (а не одной)
+local function getAllTargets()
+    local targets = {}
     local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return targets end
     
-    local closest, dist = nil, CombatModule.Range
     local myPos = char.HumanoidRootPart.Position
 
-    -- Ищем только в workspace (не заходя слишком глубоко)
-    for _, obj in ipairs(workspace:GetChildren()) do
-        if obj:IsA("Model") and obj ~= char then
-            local isEnemy = false
-            for _, name in ipairs(enemies) do
-                if obj.Name:find(name) then isEnemy = true break end
-            end
-
-            if isEnemy then
-                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head") or obj:FindFirstChildWhichIsA("BasePart")
-                if root then
-                    local d = (myPos - root.Position).Magnitude
-                    if d < dist then
-                        dist = d
-                        closest = obj
+    -- Глубокий поиск по всему миру
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
+            if not game.Players:GetPlayerFromCharacter(obj) and obj:FindFirstChildOfClass("Humanoid").Health > 0 then
+                for _, name in ipairs(enemies) do
+                    if obj.Name:find(name) then
+                        local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                        if root and (root.Position - myPos).Magnitude <= CombatModule.Range then
+                            table.insert(targets, obj)
+                        end
+                        break
                     end
                 end
             end
         end
     end
-    return closest
+    return targets
 end
 
 task.spawn(function()
     while true do
-        task.wait(0.2) -- Оптимальная задержка
+        task.wait(0.1) -- Скорость атаки
         
-        if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local target = findTarget()
+        if CombatModule.KillAura and LP.Character then
+            local targets = getAllTargets()
+            local tool = LP.Character:FindFirstChildOfClass("Tool")
             
-            if target then
-                local tPart = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head") or target:FindFirstChildWhichIsA("BasePart")
-                local tool = LP.Character:FindFirstChildOfClass("Tool")
-                
-                if tPart and tool then
-                    -- 1. ПОВОРОТ (обязательно через CFrame)
-                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(
-                        LP.Character.HumanoidRootPart.Position, 
-                        Vector3.new(tPart.Position.X, LP.Character.HumanoidRootPart.Position.Y, tPart.Position.Z)
-                    )
+            if #targets > 0 and tool then
+                -- 1. Активируем топор визуально
+                tool:Activate()
 
-                    -- 2. ВЗМАХ (через встроенную функцию топора)
-                    tool:Activate()
+                -- 2. ГЛОБАЛЬНЫЙ УДАР (бьем всех сразу)
+                for _, target in ipairs(targets) do
+                    local humanoid = target:FindFirstChildOfClass("Humanoid")
                     
-                    -- 3. ПРЯМОЙ СИГНАЛ (если есть Remote)
-                    local remote = tool:FindFirstChildOfClass("RemoteEvent")
-                    if remote then
-                        remote:FireServer(target)
+                    -- Пробуем найти скрытые Remote в игре, которые юзает Moondate
+                    local remoteNames = {"Hit", "Damage", "Attack", "Swing", "MainEvent"}
+                    
+                    -- Ищем в инструменте
+                    for _, r in ipairs(tool:GetDescendants()) do
+                        if r:IsA("RemoteEvent") then
+                            r:FireServer(target, humanoid, target:FindFirstChild("HumanoidRootPart"))
+                        end
+                    end
+                    
+                    -- Ищем в ReplicatedStorage (если в инструменте пусто)
+                    for _, rName in ipairs(remoteNames) do
+                        local r = game.ReplicatedStorage:FindFirstChild(rName)
+                        if r and r:IsA("RemoteEvent") then
+                            r:FireServer(target, humanoid)
+                        end
                     end
                 end
             end
