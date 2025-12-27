@@ -1,29 +1,34 @@
--- Modules/ESP.lua
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
+local ESP = { Enabled = false }
 
-local ESP = {}
-ESP.Enabled = false
+local function applyESP(obj, color)
+    if not obj:FindFirstChild("OrangeHighlight") then
+        local h = Instance.new("Highlight")
+        h.Name = "OrangeHighlight"
+        h.FillColor = color
+        h.OutlineColor = Color3.new(1,1,1)
+        h.FillTransparency = 0.5
+        h.Parent = obj
+    end
+end
 
-RunService.RenderStepped:Connect(function()
-	if not ESP.Enabled then return end
-	local enemiesFolder = workspace:FindFirstChild("Enemies") -- папка с NPC
-	if not enemiesFolder then return end
+game:GetService("RunService").RenderStepped:Connect(function()
+    if not ESP.Enabled then 
+        -- Удаляем ESP, если выключено
+        for _, v in ipairs(workspace:GetDescendants()) do
+            if v.Name == "OrangeHighlight" then v:Destroy() end
+        end
+        return 
+    end
 
-	for _,v in ipairs(enemiesFolder:GetChildren()) do
-		if v:IsA("Model") and v:FindFirstChild("HumanoidRootPart") then
-			if not v:FindFirstChild("ESP") then
-				local box = Instance.new("BoxHandleAdornment", v)
-				box.Name = "ESP"
-				box.Adornee = v
-				box.Size = v:GetExtentsSize()
-				box.Color3 = Color3.fromRGB(255,0,0)
-				box.Transparency = 0.6
-				box.AlwaysOnTop = true
-				box.ZIndex = 5
-			end
-		end
-	end
+    for _, v in ipairs(workspace:GetChildren()) do
+        -- Подсветка Волков/Врагов (Красный)
+        if v:IsA("Model") and v:FindFirstChild("Humanoid") and v.Name ~= LP.Name then
+            applyESP(v, Color3.new(1, 0, 0))
+        -- Подсветка Брёвен (Оранжевый)
+        elseif v.Name == "Log" then
+            applyESP(v, Color3.new(1, 0.5, 0))
+        end
+    end
 end)
 
 return ESP
