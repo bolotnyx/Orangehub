@@ -2,19 +2,33 @@ local ESPModule = {
     Enabled = false
 }
 
--- Игнорируем технический мусор
-local ignoreList = {"ProximityAttachment", "TouchInterest", "Attachment", "Model", "Part"}
+-- Игнорируем технические объекты и спавнеры
+local ignoreList = {
+    "ProximityAttachment", "TouchInterest", "Attachment", "Model", "Part",
+    "wolf spawner", "wolf respawner", "wolf head", "bunny burrow", "Burrow"
+}
 
 local function createESP(item)
-    -- Если это техническая деталь из списка игнора - выходим
-    if table.find(ignoreList, item.Name) then return end
+    -- Проверка на игнор-лист (учитываем регистр и пробелы)
+    local nameLower = item.Name:lower()
+    for _, ignore in ipairs(ignoreList) do
+        if nameLower:find(ignore:lower()) then return end
+    end
+    
     if item:FindFirstChild("ESP_Highlight") then return end
 
     -- Определяем цвет
-    local espColor = Color3.fromRGB(255, 165, 0) -- По умолчанию оранжевый (ресурсы)
+    local espColor = Color3.fromRGB(255, 165, 0) -- Оранжевый (Ресурсы)
     
-    -- Если это монстр (Wolf, Bunny и т.д.) - делаем красным
-    if item:FindFirstChildOfClass("Humanoid") or item.Name:find("Wolf") or item.Name:find("Bunny") then
+    -- Определяем врагов (Красный)
+    local isEnemy = item.Name:find("Wolf") or 
+                    item.Name:find("Bunny") or 
+                    item.Name:find("Cultist") or 
+                    item.Name:find("Bear") or 
+                    item.Name:find("Alpha") or
+                    item:FindFirstChildOfClass("Humanoid")
+
+    if isEnemy then
         espColor = Color3.fromRGB(255, 50, 50)
     end
 
@@ -27,12 +41,12 @@ local function createESP(item)
     h.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
     h.Parent = item
 
-    -- Текст (Billboard)
+    -- Текст
     local b = Instance.new("BillboardGui")
     b.Name = "ESP_Billboard"
     b.Size = UDim2.new(0, 80, 0, 20)
     b.AlwaysOnTop = true
-    b.StudsOffset = Vector3.new(0, 3, 0) -- Поднимаем надпись выше
+    b.StudsOffset = Vector3.new(0, 3, 0)
     
     local l = Instance.new("TextLabel", b)
     l.Size = UDim2.new(1, 0, 1, 0)
@@ -47,26 +61,24 @@ local function createESP(item)
     b.Parent = item
 end
 
--- Функция сканирования
 local function scan()
     if not ESPModule.Enabled then return end
     
     for _, obj in ipairs(workspace:GetDescendants()) do
-        -- Подсвечиваем всё, что имеет осмысленное название и не в игноре
         if obj:IsA("Model") or obj:IsA("BasePart") then
-            -- Проверяем, не пустая ли это модель и нет ли её в игноре
-            if obj.Name:len() > 3 and not table.find(ignoreList, obj.Name) then
-                -- Подсвечиваем только то, что является либо мобом, либо ресурсом (Журнал, Ягода, Wolf и т.д.)
-                local n = obj.Name
-                if n:find("Wolf") or n:find("Bunny") or n:find("Журнал") or n:find("Ягода") or n:find("руда") or n:find("Alpha") then
-                    createESP(obj)
-                end
+            local n = obj.Name
+            -- Важные объекты: монстры, ресурсы на русском и новые цели
+            local isImportant = n:find("Wolf") or n:find("Bunny") or n:find("Журнал") or 
+                                n:find("Ягода") or n:find("руда") or n:find("Alpha") or
+                                n:find("Cultist") or n:find("Bear") or n:find("Медведь")
+
+            if isImportant then
+                createESP(obj)
             end
         end
     end
 end
 
--- Цикл
 task.spawn(function()
     while task.wait(3) do
         if ESPModule.Enabled then
