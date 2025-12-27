@@ -1,15 +1,12 @@
 -- Modules/Player.lua
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
-local Character = LP.Character or LP.CharacterAdded:Wait()
-local Humanoid = Character:WaitForChild("Humanoid")
+local char = LP.Character or LP.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
 
 local PlayerFuncs = {}
-
-PlayerFuncs.Speed = 16
-PlayerFuncs.JumpPower = 50
-
-Humanoid.WalkSpeed = PlayerFuncs.Speed
-Humanoid.JumpPower = PlayerFuncs.JumpPower
+PlayerFuncs.Humanoid = humanoid
+PlayerFuncs.Speed = humanoid.WalkSpeed
+PlayerFuncs.JumpPower = humanoid.JumpPower
 
 return PlayerFuncs
