@@ -1,36 +1,25 @@
 local CombatModule = {
     KillAura = false,
-    Range = 16 -- Оптимальная дистанция для регистрации сервером
+    Range = 25 -- Теперь можно даже чуть дальше
 }
 
 local LP = game.Players.LocalPlayer
 local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha", "Культист", "Медведь"}
 
--- Функция поиска ближайшего живого врага
-local function getClosestEnemy()
-    local char = LP.Character
-    if not char or not char:FindFirstChild("HumanoidRootPart") then return nil end
-    
+-- Функция поиска ближайшей цели
+local function getClosest()
     local closest, dist = nil, CombatModule.Range
-    local myPos = char.HumanoidRootPart.Position
-
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") then
-            -- Проверка: не игрок и есть здоровье
-            if not game.Players:GetPlayerFromCharacter(obj) and obj:FindFirstChildOfClass("Humanoid").Health > 0 then
-                local isEnemy = false
+    for _, v in ipairs(workspace:GetDescendants()) do
+        if v:IsA("Model") and v:FindFirstChildOfClass("Humanoid") and v:FindFirstChildOfClass("Humanoid").Health > 0 then
+            if not game.Players:GetPlayerFromCharacter(v) then
                 for _, name in ipairs(enemies) do
-                    if obj.Name:find(name) then isEnemy = true break end
-                end
-
-                if isEnemy then
-                    local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
-                    if root then
-                        local d = (myPos - root.Position).Magnitude
-                        if d < dist then
-                            dist = d
-                            closest = obj
+                    if v.Name:find(name) then
+                        local root = v:FindFirstChild("HumanoidRootPart") or v:FindFirstChild("Head")
+                        if root then
+                            local d = (LP.Character.HumanoidRootPart.Position - root.Position).Magnitude
+                            if d < dist then dist = d closest = v end
                         end
+                        break
                     end
                 end
             end
@@ -39,36 +28,45 @@ local function getClosestEnemy()
     return closest
 end
 
+-- СЕРЬЕЗНЫЙ ВЗЛОМ ЛОГИКИ (Raycast Hook)
+local oldNamecall
+oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+    local method = getnamecallmethod()
+    local args = {...}
+
+    if CombatModule.KillAura and method == "Raycast" then
+        local target = getClosest()
+        if target and target:FindFirstChild("Head") then
+            -- Подменяем направление луча так, чтобы он всегда попадал в голову моба
+            args[2] = (target.Head.Position - args[1]).Unit * 1000
+            return oldNamecall(self, unpack(args))
+        end
+    end
+    return oldNamecall(self, ...)
+end)
+
+-- Цикл авто-атаки
 task.spawn(function()
     while true do
-        task.wait(0.15) -- Скорость ударов
-        
-        if CombatModule.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local target = getClosestEnemy()
-            
+        task.wait(0.1)
+        if CombatModule.KillAura and LP.Character then
+            local target = getClosest()
             if target then
                 local tool = LP.Character:FindFirstChildOfClass("Tool")
-                local targetRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
-                
-                if targetRoot and tool then
-                    -- 1. МОМЕНТАЛЬНЫЙ РАЗВОРОТ (необходим для сервера)
-                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(
-                        LP.Character.HumanoidRootPart.Position, 
-                        Vector3.new(targetRoot.Position.X, LP.Character.HumanoidRootPart.Position.Y, targetRoot.Position.Z)
-                    )
-
-                    -- 2. ВИЗУАЛЬНЫЙ ВЗМАХ
+                if tool then
+                    -- 1. Визуальный поворот (обязателен для сервера)
+                    local tRoot = target:FindFirstChild("HumanoidRootPart") or target:FindFirstChild("Head")
+                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(LP.Character.HumanoidRootPart.Position, 
+                        Vector3.new(tRoot.Position.X, LP.Character.HumanoidRootPart.Position.Y, tRoot.Position.Z))
+                    
+                    -- 2. Активация инструмента
                     tool:Activate()
-
-                    -- 3. ПРЯМАЯ ОТПРАВКА УРОНА (Remote Injection)
-                    -- Мы ищем любое событие внутри топора, которое отвечает за урон
-                    for _, remote in ipairs(tool:GetDescendants()) do
-                        if remote:IsA("RemoteEvent") then
-                            -- Пробуем самые частые форматы данных, которые ждут серверы
-                            remote:FireServer(target) 
-                            remote:FireServer(targetRoot)
-                            remote:FireServer(targetRoot.Position)
-                            remote:FireServer(target:FindFirstChildOfClass("Humanoid"))
+                    
+                    -- 3. Прямой вызов всех событий (на всякий случай)
+                    for _, r in ipairs(tool:GetDescendants()) do
+                        if r:IsA("RemoteEvent") then 
+                            r:FireServer(target)
+                            r:FireServer(target:FindFirstChildOfClass("Humanoid"))
                         end
                     end
                 end
