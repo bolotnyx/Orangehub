@@ -3,11 +3,69 @@ if game.CoreGui:FindFirstChild("OrangeHub_V4") then
     game.CoreGui["OrangeHub_V4"]:Destroy() 
 end
 
+local LP = game.Players.LocalPlayer
+_G.KillAura = false -- Глобальный переключатель
+
+-- ==========================================
+-- ЛОГИКА KILL AURA (ВСТРОЕННАЯ)
+-- ==========================================
+local enemies = {"Wolf", "Bear", "Cultist", "Mammoth", "Bunny", "Alpha"}
+local blacklist = {"Mammoth Tusk", "wolf spawner", "wolf respawner", "wolf head", "bunny burrow"}
+
+task.spawn(function()
+    while true do
+        task.wait(0.1)
+        if _G.KillAura and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local tool = LP.Character:FindFirstChildOfClass("Tool")
+            if tool then
+                for _, obj in ipairs(workspace:GetDescendants()) do
+                    if obj:IsA("Model") and obj:FindFirstChildOfClass("Humanoid") and obj ~= LP.Character then
+                        local name = obj.Name
+                        local isEnemy = false
+                        
+                        -- Проверка имен
+                        for _, enName in ipairs(enemies) do
+                            if name:find(enName) then
+                                isEnemy = true
+                                for _, bName in ipairs(blacklist) do
+                                    if name:find(bName) then isEnemy = false break end
+                                end
+                                break
+                            end
+                        end
+
+                        if isEnemy then
+                            local tRoot = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Head")
+                            if tRoot then
+                                local dist = (LP.Character.HumanoidRootPart.Position - tRoot.Position).Magnitude
+                                if dist <= 25 then -- Радиус как в Moondate
+                                    -- Поворот
+                                    LP.Character.HumanoidRootPart.CFrame = CFrame.new(LP.Character.HumanoidRootPart.Position, Vector3.new(tRoot.Position.X, LP.Character.HumanoidRootPart.Position.Y, tRoot.Position.Z))
+                                    -- Атака
+                                    tool:Activate()
+                                    -- Нанесение урона (TouchInterest)
+                                    local handle = tool:FindFirstChild("Handle") or tool:FindFirstChildWhichIsA("BasePart")
+                                    if handle then
+                                        firetouchinterest(tRoot, handle, 0)
+                                        firetouchinterest(tRoot, handle, 1)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ==========================================
+-- ВИЗУАЛЬНАЯ ЧАСТЬ UI
+-- ==========================================
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
 Main.Size = UDim2.new(0, 500, 0, 350)
 Main.Position = UDim2.new(0.5, -250, 0.5, -175)
@@ -17,21 +75,17 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Оранжевая полоска сверху
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 Accent.ZIndex = 5
 Instance.new("UICorner", Accent)
 
--- САЙДБАР
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 140, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
-Sidebar.ZIndex = 1
 Instance.new("UICorner", Sidebar)
 
--- ЗАГОЛОВОК
 local Title = Instance.new("TextLabel", Sidebar)
 Title.Size = UDim2.new(1, 0, 0, 60)
 Title.Text = "ORANGE HUB"
@@ -39,27 +93,21 @@ Title.TextColor3 = Color3.fromRGB(255, 165, 0)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
 Title.BackgroundTransparency = 1
-Title.ZIndex = 2
 
--- КОНТЕЙНЕР ВКЛАДОК
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
-TabHolder.ZIndex = 2
 Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
 
--- КОНТЕЙНЕР ФУНКЦИЙ
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -160, 1, -70)
 Container.Position = UDim2.new(0, 150, 0, 55)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
-Container.ZIndex = 2
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- Функция создания тоггла
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -88,38 +136,23 @@ local function createToggle(name, callback)
         enabled = not enabled
         dot:TweenPosition(enabled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6), "Out", "Sine", 0.15, true)
         bg.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(60, 60, 60)
-        if callback then task.spawn(pcall, callback, enabled) end
+        callback(enabled)
     end)
 end
 
--- ЛОГИКА ВКЛАДОК
 local function showTab(name)
     for _, v in ipairs(Container:GetChildren()) do 
         if v:IsA("TextButton") then v:Destroy() end 
     end
     
     if name == "Player" then
-        createToggle("Speed Hack", function(v) 
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 
-        end)
-        createToggle("Fly (Joystick)", function(v)
-            if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
-        end)
-        createToggle("Anti-AFK", function(v)
-            if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
-        end)
+        createToggle("Speed Hack", function(v) LP.Character.Humanoid.WalkSpeed = v and 100 or 16 end)
     elseif name == "Combat" then
-        -- ТУТ ТВОЙ ESP
-        createToggle("ESP Items & Monsters", function(v)
-            if _G.Modules["ESP"] then 
-                _G.Modules["ESP"].Enabled = v 
-            else
-                warn("ESP Module not found!")
-            end
-        end)
-        
         createToggle("KillAura", function(v)
-            if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+            _G.KillAura = v
+        end)
+        createToggle("ESP Monsters", function(v)
+            if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
     end
 end
@@ -136,12 +169,10 @@ local function addSidebarButton(name)
     t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
--- Кнопки
 addSidebarButton("Player")
 addSidebarButton("Combat")
-showTab("Player")
+showTab("Combat") -- Сразу открываем боевую вкладку
 
--- Закрытие/Открытие
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
