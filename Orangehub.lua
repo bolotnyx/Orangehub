@@ -5,8 +5,6 @@ if _G.OrangeHubLoaded then
     return
 end
 _G.OrangeHubLoaded = true
-
--- Создаем единую таблицу для всех модулей
 _G.Modules = {}
 
 local BASE_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/"
@@ -15,25 +13,29 @@ local ModuleList = {
     {Name = "Player", Path = "Modules/Player.lua"},
     {Name = "Combat", Path = "Modules/Combat.lua"},
     {Name = "ESP",    Path = "Modules/ESP.lua"},
-    {Name = "UI",     Path = "UI.lua"}
+    {Name = "UI",     Path = "Modules/UI.lua"} -- ПУТЬ ИСПРАВЛЕН
 }
 
-for _, mod in ipairs(ModuleList) do
-    local success, result = pcall(function()
-        local cacheBuster = "?t=" .. os.time()
-        local source = game:HttpGet(BASE_URL .. mod.Path .. cacheBuster)
-        local func = loadstring(source)
-        if func then
-            return func()
-        else
-            error("Ошибка синтаксиса в " .. mod.Name)
-        end
-    end)
+print("🍊 OrangeHub: Запуск...")
 
-    if success then
-        _G.Modules[mod.Name] = result
-        print("✅ Загружен: " .. mod.Name)
+for _, mod in ipairs(ModuleList) do
+    local url = BASE_URL .. mod.Path .. "?t=" .. os.time()
+    local success, source = pcall(function() return game:HttpGet(url) end)
+    
+    if success and source and not source:find("404: Not Found") then
+        local func, err = loadstring(source)
+        if func then
+            local modSuccess, result = pcall(func)
+            if modSuccess then
+                _G.Modules[mod.Name] = result
+                print("✅ Загружен: " .. mod.Name)
+            else
+                warn("❌ Ошибка выполнения " .. mod.Name .. ": " .. tostring(result))
+            end
+        else
+            warn("❌ Ошибка кода в " .. mod.Name .. ": " .. tostring(err))
+        end
     else
-        warn("❌ Ошибка загрузки " .. mod.Name .. ": " .. tostring(result))
+        warn("❌ Не найден файл: " .. mod.Path)
     end
 end
