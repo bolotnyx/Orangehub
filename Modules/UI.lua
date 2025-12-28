@@ -8,7 +8,7 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (Связь с модулями)
+-- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
 
@@ -22,7 +22,7 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Оранжевая полоска сверху
+-- Оранжевая полоска
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
@@ -52,7 +52,8 @@ TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
 TabHolder.ZIndex = 3
-Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 8)
+local TabList = Instance.new("UIListLayout", TabHolder)
+TabList.Padding = UDim.new(0, 8)
 
 -- КОНТЕЙНЕР ФУНКЦИЙ
 local Container = Instance.new("ScrollingFrame", Main)
@@ -64,7 +65,7 @@ Container.ScrollBarThickness = 2
 Container.ZIndex = 5
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (TextBox)
+-- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 40)
@@ -76,15 +77,11 @@ local function createInput(name, callback)
     box.TextSize = 14
     box.ZIndex = 10
     box.Active = true
-    box.ClearTextOnFocus = true
     Instance.new("UICorner", box)
     
-    box.FocusLost:Connect(function(enter)
+    box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
-        if num then 
-            callback(num) 
-            box.PlaceholderText = "Сейчас: " .. num
-        end
+        if num then callback(num) end
         box.Text = ""
     end)
 end
@@ -121,7 +118,7 @@ local function createToggle(name, callback)
         enabled = not enabled
         dot:TweenPosition(enabled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6), "Out", "Sine", 0.15, true)
         bg.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(60, 60, 60)
-        if callback then task.spawn(pcall, callback, enabled) end
+        if callback then pcall(callback, enabled) end
     end)
 end
 
@@ -132,7 +129,6 @@ local function showTab(name)
     end
     
     if name == "Player" then
-        -- СКОРОСТЬ БЕГА
         createInput("СКОРОСТЬ БЕГА", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
@@ -147,35 +143,29 @@ local function showTab(name)
             end)
         end)
 
-        -- ПОЛЕТ
         createInput("СКОРОСТЬ ПОЛЕТА", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
-            if _G.Modules and _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
+            if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
         end)
 
-        -- INFINITE JUMP (Твой новый модуль)
         createToggle("Infinite Jump", function(v)
-            if _G.Modules and _G.Modules["InfiniteJump"] then _G.Modules["InfiniteJump"].Enabled = v end
+            if _G.Modules["InfiniteJump"] then _G.Modules["InfiniteJump"].Enabled = v end
         end)
 
-        -- FULL BRIGHT (Твой новый модуль)
         createToggle("FullBright", function(v)
-            if _G.Modules and _G.Modules["FullBright"] then _G.Modules["FullBright"].Enabled = v end
+            if _G.Modules["FullBright"] then _G.Modules["FullBright"].Enabled = v end
         end)
-        
-        -- ANTI-AFK
+
         createToggle("Anti-AFK", function(v)
-            if _G.Modules and _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
+            if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
         end)
 
     elseif name == "Combat" then
-        -- ESP
         createToggle("ESP Monsters & Items", function(v)
-            if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
+            if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
-        -- KILL AURA
         createToggle("KillAura", function(v)
-            if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+            if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
     end
 end
@@ -198,7 +188,7 @@ addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
--- УПРАВЛЕНИЕ ОКНОМ (Закрыть/Открыть)
+-- КНОПКИ СВЕРНУТЬ/РАЗВЕРНУТЬ
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
