@@ -1,50 +1,32 @@
-local FlyModule = {
-    Enabled = false,
-    Speed = 50
-}
-
+local FlyMod = { Enabled = false }
 local LP = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 
-RunService.Stepped:Connect(function()
-    local Char = LP.Character
-    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
-    local Camera = workspace.CurrentCamera
-
-    if FlyModule.Enabled and Root and Hum then
-        -- СВЯЗЬ С UI: Берем скорость из глобальной переменной
-        FlyModule.Speed = _G.FlySpeedValue or 50
-
-        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
-        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
-
-        BV.Name = "FlyVelocity"
-        BG.Name = "FlyGyro"
-        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-        BG.D = 50
+function FlyMod.SetState(state)
+    FlyMod.Enabled = state
+    local char = LP.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    
+    if state and root then
+        local bv = root:FindFirstChild("OrangeBV") or Instance.new("BodyVelocity", root)
+        local bg = root:FindFirstChild("OrangeBG") or Instance.new("BodyGyro", root)
+        bv.Name = "OrangeBV"
+        bg.Name = "OrangeBG"
         
-        Hum.PlatformStand = true
-
-        if Hum.MoveDirection.Magnitude > 0 then
-            local camCF = Camera.CFrame
-            local rawMove = camCF:VectorToObjectSpace(Hum.MoveDirection)
-            local finalDir = (camCF.LookVector * -rawMove.Z) + (camCF.RightVector * rawMove.X)
-            
-            BV.Velocity = finalDir.Unit * FlyModule.Speed
-            BG.CFrame = camCF
-        else
-            BV.Velocity = Vector3.new(0, 0.1, 0)
-            BG.CFrame = camCF
-        end
-    else
-        if Root then
-            if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
-            if Root:FindFirstChild("FlyGyro") then Root.FlyGyro:Destroy() end
-        end
-        if Hum then Hum.PlatformStand = false end
+        bv.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        bg.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        
+        task.spawn(function()
+            while FlyMod.Enabled and root and char:Parent() do
+                -- Используем глобальную скорость или 50 по умолчанию
+                local speed = _G.FlySpeedValue or 50
+                bv.Velocity = workspace.CurrentCamera.CFrame.LookVector * speed
+                bg.CFrame = workspace.CurrentCamera.CFrame
+                task.wait()
+            end
+            if bv then bv:Destroy() end
+            if bg then bg:Destroy() end
+        end)
     end
-end)
+end
 
-return FlyModule
+return FlyMod
