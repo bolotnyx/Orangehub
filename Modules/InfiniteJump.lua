@@ -1,46 +1,24 @@
-local InfiniteJump = {}
-InfiniteJump.Enabled = false
-
+-- InfiniteJump.lua
+local Player = game.Players.LocalPlayer
 local UIS = game:GetService("UserInputService")
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
 
--- Храним connection, чтобы отключать
-local jumpConnection = nil
+local InfJumpEnabled = false
 
--- Функция, которая срабатывает на JumpRequest
-local function onJump()
-    if not InfiniteJump.Enabled then return end
-    local char = LP.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        -- Принудительно ставим состояние прыжка
-        hum:ChangeState(Enum.HumanoidStateType.Jumping)
+local module = {}
+
+module.SetState = function(state)
+    InfJumpEnabled = state
+end
+
+-- Событие прыжка
+local connection
+connection = UIS.JumpRequest:Connect(function()
+    if InfJumpEnabled and Player.Character and Player.Character:FindFirstChildOfClass("Humanoid") then
+        Player.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
     end
-end
+end)
 
--- Устанавливаем состояние: true = включить, false = выключить
-function InfiniteJump.SetState(state)
-    InfiniteJump.Enabled = state
+-- Чтобы можно было через UI менять состояние
+module.InfJumpEnabled = InfJumpEnabled
 
-    if state then
-        -- Если включаем и connection ещё нет
-        if not jumpConnection then
-            jumpConnection = UIS.JumpRequest:Connect(onJump)
-        end
-    else
-        -- Если выключаем и connection есть
-        if jumpConnection then
-            jumpConnection:Disconnect()
-            jumpConnection = nil
-        end
-    end
-end
-
--- Авто-подключение для текущего состояния
-if InfiniteJump.Enabled and not jumpConnection then
-    jumpConnection = UIS.JumpRequest:Connect(onJump)
-end
-
-return InfiniteJump
+return module
