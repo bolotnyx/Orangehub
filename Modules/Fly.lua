@@ -1,49 +1,50 @@
 local FlyModule = {
-    Enabled = false
+    Enabled = false,
+    Speed = 50
 }
 
 local LP = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
-task.spawn(function()
-    local BV = Instance.new("BodyVelocity")
-    local BG = Instance.new("BodyGyro")
-    BV.MaxForce = Vector3.new(0, 0, 0)
-    BG.MaxTorque = Vector3.new(0, 0, 0)
+RunService.Stepped:Connect(function()
+    local Char = LP.Character
+    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
+    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
+    local Camera = workspace.CurrentCamera
 
-    RunService.RenderStepped:Connect(function()
-        local Character = LP.Character
-        if FlyModule.Enabled and Character and Character:FindFirstChild("HumanoidRootPart") then
-            local Root = Character.HumanoidRootPart
-            local Hum = Character:FindFirstChildOfClass("Humanoid")
-            local Camera = workspace.CurrentCamera
-            
-            -- ВАЖНО: Берем скорость из твоего UI
-            local currentSpeed = _G.FlySpeedValue or 50 
+    if FlyModule.Enabled and Root and Hum then
+        -- СВЯЗЬ С UI: Берем скорость из глобальной переменной
+        FlyModule.Speed = _G.FlySpeedValue or 50
 
-            BV.Parent = Root
-            BG.Parent = Root
+        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
+        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
+
+        BV.Name = "FlyVelocity"
+        BG.Name = "FlyGyro"
+        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
+        BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
+        BG.D = 50
+        
+        Hum.PlatformStand = true
+
+        if Hum.MoveDirection.Magnitude > 0 then
+            local camCF = Camera.CFrame
+            local rawMove = camCF:VectorToObjectSpace(Hum.MoveDirection)
+            local finalDir = (camCF.LookVector * -rawMove.Z) + (camCF.RightVector * rawMove.X)
             
-            BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            BG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            
-            BG.CFrame = Camera.CFrame
-            
-            -- Читаем направление джойстика
-            local moveDir = Hum.MoveDirection
-            if moveDir.Magnitude > 0 then
-                BV.Velocity = moveDir * currentSpeed
-            else
-                BV.Velocity = Vector3.new(0, 0.1, 0) -- Зависание в воздухе
-            end
+            BV.Velocity = finalDir.Unit * FlyModule.Speed
+            BG.CFrame = camCF
         else
-            -- Полное отключение полета
-            BV.MaxForce = Vector3.new(0, 0, 0)
-            BG.MaxTorque = Vector3.new(0, 0, 0)
-            if BV.Parent then BV.Parent = nil end
-            if BG.Parent then BG.Parent = nil end
+            BV.Velocity = Vector3.new(0, 0.1, 0)
+            BG.CFrame = camCF
         end
-    end)
+    else
+        if Root then
+            if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
+            if Root:FindFirstChild("FlyGyro") then Root.FlyGyro:Destroy() end
+        end
+        if Hum then Hum.PlatformStand = false end
+    end
 end)
 
 return FlyModule
