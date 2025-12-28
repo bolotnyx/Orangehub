@@ -1,33 +1,56 @@
--- ORANGE HUB [NEW CORE LOADER]
-_G.Modules = {}
+-- Ждём загрузку игры
+repeat task.wait() until game:IsLoaded()
 
--- Авто-определение пути (чтобы не ошибиться в ссылках)
-local baseUrl = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/"
+-- Защита от повторного запуска
+if _G.OrangeHubLoaded then
+    warn("🍊 OrangeHub уже загружен")
+    return
+end
+_G.OrangeHubLoaded = true
 
-local function Load(name, path)
-    local success, content = pcall(function() return game:HttpGet(baseUrl .. path) end)
-    if success and content and not content:find("404") then
-        local func, err = loadstring(content)
+print("🍊 OrangeHub: Запуск ядра...")
+
+-- Глобальная таблица для связи всех частей
+_G.OrangeHub = {
+    Modules = {},
+    Settings = {
+        WalkSpeed = 100,
+        FlySpeed = 50,
+        ESPEnabled = false
+    }
+}
+
+-- Ссылка на твой репозиторий
+local BASE_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/"
+
+-- Список файлов для загрузки (Modules/Player.lua и т.д.)
+local ModuleList = {
+    {Name = "Player", Path = "Modules/Player.lua"},
+    {Name = "Combat", Path = "Modules/Combat.lua"},
+    {Name = "ESP",    Path = "Modules/ESP.lua"},
+    {Name = "UI",     Path = "UI.lua"} -- UI обычно лежит в корне или папке, проверь путь
+}
+
+-- Функция загрузки
+for _, mod in ipairs(ModuleList) do
+    local success, result = pcall(function()
+        -- Добавляем случайное число в конец ссылки, чтобы избежать кэша GitHub
+        local cacheBuster = "?t=" .. os.time()
+        local source = game:HttpGet(BASE_URL .. mod.Path .. cacheBuster)
+        local func = loadstring(source)
         if func then
-            _G.Modules[name] = func()
-            print("✅ Модуль загружен: " .. name)
+            return func()
         else
-            warn("❌ Ошибка в " .. name .. ": " .. err)
+            error("Ошибка синтаксиса в файле " .. mod.Name)
         end
+    end)
+
+    if success then
+        _G.OrangeHub.Modules[mod.Name] = result
+        print("✅ Модуль загружен: " .. mod.Name)
     else
-        warn("❌ Файл не найден: " .. path)
+        warn("❌ Ошибка загрузки модуля " .. mod.Name .. ": " .. tostring(result))
     end
 end
 
--- Загружаем запчасти
-Load("InfiniteJump", "Modules/InfiniteJump.lua")
-Load("FullBright", "Modules/FullBright.lua")
-Load("Fly", "Modules/Fly.lua")
-
--- Загружаем внешний вид
-local uiSuccess, uiContent = pcall(function() return game:HttpGet(baseUrl .. "UI.lua") end)
-if uiSuccess and not uiContent:find("404") then
-    loadstring(uiContent)()
-else
-    warn("❌ UI.lua не найден по ссылке: " .. baseUrl .. "UI.lua")
-end
+print("🍊 OrangeHub полностью готов к работе!")
