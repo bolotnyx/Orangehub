@@ -1,6 +1,5 @@
 local FlyModule = {
-    Enabled = false,
-    Speed = 50
+    Enabled = false
 }
 
 local LP = game.Players.LocalPlayer
@@ -13,13 +12,14 @@ task.spawn(function()
     BG.MaxTorque = Vector3.new(0, 0, 0)
 
     RunService.RenderStepped:Connect(function()
-        if FlyModule.Enabled and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            local Root = LP.Character.HumanoidRootPart
-            local Hum = LP.Character:FindFirstChildOfClass("Humanoid")
+        local Character = LP.Character
+        if FlyModule.Enabled and Character and Character:FindFirstChild("HumanoidRootPart") then
+            local Root = Character.HumanoidRootPart
+            local Hum = Character:FindFirstChildOfClass("Humanoid")
             local Camera = workspace.CurrentCamera
             
-            -- Обновляем скорость из глобальной переменной UI
-            FlyModule.Speed = _G.FlySpeedValue or 50
+            -- ВАЖНО: Берем скорость из твоего UI
+            local currentSpeed = _G.FlySpeedValue or 50 
 
             BV.Parent = Root
             BG.Parent = Root
@@ -29,15 +29,15 @@ task.spawn(function()
             
             BG.CFrame = Camera.CFrame
             
-            -- Логика движения (совместима с джойстиком)
-            local MoveDir = Hum.MoveDirection
-            if MoveDir.Magnitude > 0 then
-                BV.Velocity = MoveDir * FlyModule.Speed
+            -- Читаем направление джойстика
+            local moveDir = Hum.MoveDirection
+            if moveDir.Magnitude > 0 then
+                BV.Velocity = moveDir * currentSpeed
             else
-                BV.Velocity = Vector3.new(0, 0.1, 0) -- Висение на месте
+                BV.Velocity = Vector3.new(0, 0.1, 0) -- Зависание в воздухе
             end
         else
-            -- Выключаем физику полета, когда Fly выключен
+            -- Полное отключение полета
             BV.MaxForce = Vector3.new(0, 0, 0)
             BG.MaxTorque = Vector3.new(0, 0, 0)
             if BV.Parent then BV.Parent = nil end
