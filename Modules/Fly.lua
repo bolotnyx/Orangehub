@@ -1,7 +1,6 @@
 local FlyMod = { Enabled = false }
 
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 
 local LP = Players.LocalPlayer
@@ -33,32 +32,21 @@ function FlyMod.SetState(state)
 		task.spawn(function()
 			while FlyMod.Enabled and char.Parent do
 				local speed = _G.FlySpeedValue or 50
-				local vertical = 0
-
-				-- Jump = вверх
-				if hum.Jump then
-					vertical = speed
-				end
-
-				-- Crouch / Sit = вниз (Android)
-				if hum.Sit then
-					vertical = -speed
-				end
-
+				local cam = workspace.CurrentCamera
 				local moveDir = hum.MoveDirection
-				local velocity = Vector3.new(
-					moveDir.X * speed,
-					vertical,
-					moveDir.Z * speed
-				)
-
-				bv.Velocity = velocity
 
 				if moveDir.Magnitude > 0 then
-					bg.CFrame = CFrame.lookAt(
-						root.Position,
-						root.Position + Vector3.new(moveDir.X, 0, moveDir.Z)
-					)
+					-- направление = КУДА СМОТРИШЬ
+					local dir = cam.CFrame.LookVector
+
+					-- сила зависит от джойстика
+					bv.Velocity = dir * speed * moveDir.Magnitude
+
+					-- поворот за камерой
+					bg.CFrame = cam.CFrame
+				else
+					-- зависаем
+					bv.Velocity = Vector3.zero
 				end
 
 				RunService.Heartbeat:Wait()
