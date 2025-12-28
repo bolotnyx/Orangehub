@@ -8,7 +8,7 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ПЕРЕМЕННЫЕ ДЛЯ СКОРОСТИ
+-- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
 
@@ -26,14 +26,14 @@ Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-Accent.ZIndex = 5
+Accent.ZIndex = 10 -- Поверх всего
 Instance.new("UICorner", Accent)
 
 -- САЙДБАР
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 140, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
-Sidebar.ZIndex = 1
+Sidebar.ZIndex = 2
 Instance.new("UICorner", Sidebar)
 
 -- ЗАГОЛОВОК
@@ -44,14 +44,14 @@ Title.TextColor3 = Color3.fromRGB(255, 165, 0)
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 18
 Title.BackgroundTransparency = 1
-Title.ZIndex = 2
+Title.ZIndex = 3
 
 -- КОНТЕЙНЕР ВКЛАДОК
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
-TabHolder.ZIndex = 2
+TabHolder.ZIndex = 3
 Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
 
 -- КОНТЕЙНЕР ФУНКЦИЙ
@@ -61,10 +61,10 @@ Container.Position = UDim2.new(0, 150, 0, 55)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
-Container.ZIndex = 2
+Container.ZIndex = 5 -- Выше фона окна
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (ДЛЯ СКОРОСТИ)
+-- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (ИСПРАВЛЕНА ДЛЯ ТЕЛЕФОНА)
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 40)
@@ -74,14 +74,18 @@ local function createInput(name, callback)
     box.TextColor3 = Color3.new(1, 1, 1)
     box.Font = Enum.Font.GothamBold
     box.TextSize = 14
+    box.ZIndex = 6
+    box.Active = true -- Позволяет кликать
+    box.Interactable = true -- Специально для новых версий Roblox
     Instance.new("UICorner", box)
     
     box.FocusLost:Connect(function(enter)
-        if enter then
-            local num = tonumber(box.Text)
-            if num then callback(num) end
-            box.Text = ""
+        local num = tonumber(box.Text)
+        if num then 
+            callback(num)
+            box.PlaceholderText = "Тек: " .. num
         end
+        box.Text = ""
     end)
 end
 
@@ -95,18 +99,21 @@ local function createToggle(name, callback)
     btn.Font = Enum.Font.GothamBold
     btn.TextSize = 13
     btn.TextXAlignment = Enum.TextXAlignment.Left
+    btn.ZIndex = 6
     Instance.new("UICorner", btn)
 
     local bg = Instance.new("Frame", btn)
     bg.Size = UDim2.new(0, 34, 0, 18)
     bg.Position = UDim2.new(1, -45, 0.5, -9)
     bg.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+    bg.ZIndex = 7
     Instance.new("UICorner", bg).CornerRadius = UDim.new(1, 0)
 
     local dot = Instance.new("Frame", bg)
     dot.Size = UDim2.new(0, 12, 0, 12)
     dot.Position = UDim2.new(0, 3, 0.5, -6)
     dot.BackgroundColor3 = Color3.new(1, 1, 1)
+    dot.ZIndex = 8
     Instance.new("UICorner", dot).CornerRadius = UDim.new(1, 0)
 
     local enabled = false
@@ -121,12 +128,11 @@ end
 -- ЛОГИКА ВКЛАДОК
 local function showTab(name)
     for _, v in ipairs(Container:GetChildren()) do 
-        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end 
+        if not v:IsA("UIListLayout") then v:Destroy() end 
     end
     
     if name == "Player" then
-        -- Настройка и включение скорости
-        createInput("Введите скорость бега (число)", function(v) _G.WalkSpeedValue = v end)
+        createInput("СКОРОСТЬ БЕГА (100)", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
             task.spawn(function()
@@ -136,28 +142,19 @@ local function showTab(name)
                     end
                     task.wait(0.1)
                 end
-                LP.Character.Humanoid.WalkSpeed = 16
+                if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
             end)
         end)
 
-        -- Настройка и включение полёта
-        createInput("Введите скорость полёта", function(v) _G.FlySpeedValue = v end)
+        createInput("СКОРОСТЬ ПОЛЕТА (50)", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
-            if _G.Modules["Fly"] then 
-                _G.Modules["Fly"].Speed = _G.FlySpeedValue
+            if _G.Modules and _G.Modules["Fly"] then 
                 _G.Modules["Fly"].Enabled = v 
             end
         end)
-        
-        createToggle("Anti-AFK", function(v)
-            if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
-        end)
     elseif name == "Combat" then
-        createToggle("ESP Items & Monsters", function(v)
-            if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
-        end)
         createToggle("KillAura", function(v)
-            if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+            if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
     end
 end
@@ -169,7 +166,7 @@ local function addSidebarButton(name)
     t.Text = name
     t.TextColor3 = Color3.new(1, 1, 1)
     t.Font = Enum.Font.GothamBold
-    t.TextSize = 14
+    t.ZIndex = 4
     Instance.new("UICorner", t)
     t.MouseButton1Click:Connect(function() showTab(name) end)
 end
@@ -178,12 +175,11 @@ addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
--- Кнопки открытия/закрытия
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
 Collapse.Text = "—"
-Collapse.TextColor3 = Color3.new(1, 1, 1)
+Collapse.ZIndex = 11
 Collapse.BackgroundColor3 = Color3.fromRGB(45, 45, 47)
 Instance.new("UICorner", Collapse)
 
