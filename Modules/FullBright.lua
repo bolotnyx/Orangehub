@@ -4,24 +4,17 @@ local FullBrightModule = {
 
 local Lighting = game:GetService("Lighting")
 
--- Сохраняем оригинальные настройки, чтобы можно было выключить
-local origAmbient = Lighting.Ambient
-local origBrightness = Lighting.Brightness
-local origShadows = Lighting.GlobalShadows
-
+-- Запускаем бесконечный цикл в отдельном потоке
 task.spawn(function()
     while true do
         if FullBrightModule.Enabled then
-            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
-            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
             Lighting.Brightness = 2
-            Lighting.GlobalShadows = false -- Убираем тени
-            Lighting.ClockTime = 12 -- Всегда полдень
-        else
-            -- Если нужно, можно раскомментировать строки ниже для возврата к норме:
-            -- Lighting.GlobalShadows = origShadows
+            Lighting.Ambient = Color3.new(1, 1, 1)
+            Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+            Lighting.GlobalShadows = false
+            Lighting.ClockTime = 14 -- Всегда солнечный день
         end
-        task.wait(0.2) -- Частая проверка
+        task.wait(0.5) -- Проверяем дважды в секунду, чтобы игра не вернула темноту
     end
 end)
 
