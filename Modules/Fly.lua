@@ -6,58 +6,44 @@ local FlyModule = {
 local LP = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
-RunService.Stepped:Connect(function()
-    local Char = LP.Character
-    local Root = Char and Char:FindFirstChild("HumanoidRootPart")
-    local Hum = Char and Char:FindFirstChildOfClass("Humanoid")
-    local Camera = workspace.CurrentCamera
+task.spawn(function()
+    local BV = Instance.new("BodyVelocity")
+    local BG = Instance.new("BodyGyro")
+    BV.MaxForce = Vector3.new(0, 0, 0)
+    BG.MaxTorque = Vector3.new(0, 0, 0)
 
-    if FlyModule.Enabled and Root and Hum then
-        local BV = Root:FindFirstChild("FlyVelocity") or Instance.new("BodyVelocity", Root)
-        local BG = Root:FindFirstChild("FlyGyro") or Instance.new("BodyGyro", Root)
+    RunService.RenderStepped:Connect(function()
+        if FlyModule.Enabled and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            local Root = LP.Character.HumanoidRootPart
+            local Hum = LP.Character:FindFirstChildOfClass("Humanoid")
+            local Camera = workspace.CurrentCamera
+            
+            -- Обновляем скорость из глобальной переменной UI
+            FlyModule.Speed = _G.FlySpeedValue or 50
 
-        BV.Name = "FlyVelocity"
-        BG.Name = "FlyGyro"
-        BV.MaxForce = Vector3.new(1e9, 1e9, 1e9)
-        BG.MaxTorque = Vector3.new(1e9, 1e9, 1e9)
-        BG.D = 50
-        
-        Hum.PlatformStand = true
-
-        -- РАСЧЕТ ДВИЖЕНИЯ
-        if Hum.MoveDirection.Magnitude > 0 then
-            -- Определяем направление относительно экрана
-            -- На мобилках: MoveDirection.Z < 0 это "вперед" (джойстик вверх)
-            -- MoveDirection.X > 0 это "вправо"
+            BV.Parent = Root
+            BG.Parent = Root
             
-            local camCF = Camera.CFrame
-            local lv = camCF.LookVector
-            local rv = camCF.RightVector
+            BV.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+            BG.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
             
-            -- Вычисляем вектор:
-            -- Берем "вперед" камеры и умножаем на силу наклона джойстика по вертикали
-            -- Берем "право" камеры и умножаем на силу наклона джойстика по горизонтали
-            -- Используем локальные координаты джойстика (ControlModule), но так как мы 
-            -- работаем с Hum.MoveDirection, нам нужно просто "отвязать" его от мировых координат
+            BG.CFrame = Camera.CFrame
             
-            -- Самый стабильный способ для мобилок:
-            local rawMove = camCF:VectorToObjectSpace(Hum.MoveDirection)
-            local finalDir = (camCF.LookVector * -rawMove.Z) + (camCF.RightVector * rawMove.X)
-            
-            BV.Velocity = finalDir.Unit * FlyModule.Speed
-            BG.CFrame = camCF
+            -- Логика движения (совместима с джойстиком)
+            local MoveDir = Hum.MoveDirection
+            if MoveDir.Magnitude > 0 then
+                BV.Velocity = MoveDir * FlyModule.Speed
+            else
+                BV.Velocity = Vector3.new(0, 0.1, 0) -- Висение на месте
+            end
         else
-            BV.Velocity = Vector3.new(0, 0, 0)
-            BG.CFrame = camCF
+            -- Выключаем физику полета, когда Fly выключен
+            BV.MaxForce = Vector3.new(0, 0, 0)
+            BG.MaxTorque = Vector3.new(0, 0, 0)
+            if BV.Parent then BV.Parent = nil end
+            if BG.Parent then BG.Parent = nil end
         end
-    else
-        -- Очистка
-        if Root then
-            if Root:FindFirstChild("FlyVelocity") then Root.FlyVelocity:Destroy() end
-            if Root:FindFirstChild("FlyGyro") then Root.FlyGyro:Destroy() end
-        end
-        if Hum then Hum.PlatformStand = false end
-    end
+    end)
 end)
 
 return FlyModule
