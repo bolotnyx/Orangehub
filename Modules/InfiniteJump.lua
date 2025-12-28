@@ -1,23 +1,23 @@
-local InfiniteJump = { Enabled = false }
+local InfiniteJump = {}
+InfiniteJump.Enabled = false
 
-local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
+local Players = game:GetService("Players")
 
-local LP = Players.LocalPlayer
+UIS.JumpRequest:Connect(function()
+	if InfiniteJump.Enabled then
+		local char = Players.LocalPlayer.Character
+		if char then
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum:ChangeState("Jumping")
+			end
+		end
+	end
+end)
 
 function InfiniteJump.SetState(state)
 	InfiniteJump.Enabled = state
 end
-
-UIS.JumpRequest:Connect(function()
-	if not InfiniteJump.Enabled then return end
-
-	local char = LP.Character
-	local hum = char and char:FindFirstChildOfClass("Humanoid")
-
-	if hum then
-		hum:ChangeState(Enum.HumanoidStateType.Jumping)
-	end
-end)
 
 return InfiniteJump
