@@ -1,3 +1,5 @@
+-- [[ ORANGE HUB V4 - UI MODULE ]]
+
 -- Очистка старого UI перед запуском
 if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
     game.CoreGui["OrangeHub_V4"]:Destroy() 
@@ -8,10 +10,9 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+-- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (Синхронизация с ядром)
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
-if not _G.Modules then _G.Modules = {} end -- Защита: создаем таблицу, если Main.lua еще не успел
 
 -- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
@@ -23,14 +24,14 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Оранжевая полоска
+-- Оранжевая полоска сверху
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 Accent.ZIndex = 11
 Instance.new("UICorner", Accent)
 
--- САЙДБАР
+-- САЙДБАР (Боковая панель)
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 150, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
@@ -47,7 +48,7 @@ Title.TextSize = 20
 Title.BackgroundTransparency = 1
 Title.ZIndex = 3
 
--- КОНТЕЙНЕР ВКЛАДОК
+-- КОНТЕЙНЕР ВКЛАДОК (Кнопки Player, Combat)
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
@@ -55,7 +56,7 @@ TabHolder.BackgroundTransparency = 1
 TabHolder.ZIndex = 3
 Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 8)
 
--- КОНТЕЙНЕР ФУНКЦИЙ
+-- КОНТЕЙНЕР ФУНКЦИЙ (Правая часть окна)
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -170, 1, -70)
 Container.Position = UDim2.new(0, 160, 0, 55)
@@ -63,30 +64,33 @@ Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
 Container.ZIndex = 5
-Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
+local ListLayout = Instance.new("UIListLayout", Container)
+ListLayout.Padding = UDim.new(0, 10)
 
--- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА
+-- [УТИЛИТЫ UI]
+
+-- Поле ввода (TextBox)
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 40)
     box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
     box.PlaceholderText = name
+    box.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
     box.Text = ""
     box.TextColor3 = Color3.new(1, 1, 1)
     box.Font = Enum.Font.GothamBold
     box.TextSize = 14
     box.ZIndex = 10
-    box.Active = true
     Instance.new("UICorner", box)
     
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
         if num then callback(num) end
-        box.Text = ""
+        box.Text = "" -- Очищаем после ввода
     end)
 end
 
--- ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА
+-- Переключатель (Toggle)
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -122,14 +126,16 @@ local function createToggle(name, callback)
     end)
 end
 
--- ЛОГИКА ВКЛАДОК
+-- [ЛОГИКА ВКЛАДОК]
 local function showTab(name)
+    -- Очищаем текущие кнопки
     for _, v in ipairs(Container:GetChildren()) do 
         if not v:IsA("UIListLayout") then v:Destroy() end 
     end
     
     if name == "Player" then
-        createInput("СКОРОСТЬ БЕГА", function(v) _G.WalkSpeedValue = v end)
+        createInput("СКОРОСТЬ (Число)", function(v) _G.WalkSpeedValue = v end)
+        
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
             task.spawn(function()
@@ -139,30 +145,36 @@ local function showTab(name)
                     end
                     task.wait(0.1)
                 end
-                if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
+                if LP.Character and LP.Character:FindFirstChild("Humanoid") then 
+                    LP.Character.Humanoid.WalkSpeed = 16 
+                end
             end)
         end)
 
         createToggle("Infinite Jump", function(v)
-            if _G.Modules and _G.Modules["InfiniteJump"] then 
-                _G.Modules["InfiniteJump"].Enabled = v 
+            if _G.Modules and _G.Modules["Player"] then 
+                _G.Modules["Player"].InfJumpEnabled = v 
             end
         end)
 
         createToggle("FullBright", function(v)
-            if _G.Modules and _G.Modules["FullBright"] then 
-                _G.Modules["FullBright"].Enabled = v 
+            if _G.Modules and _G.Modules["Player"] then 
+                _G.Modules["Player"].FullBrightEnabled = v 
             end
         end)
 
     elseif name == "Combat" then
         createToggle("ESP Monsters & Items", function(v)
-            if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
+            if _G.Modules and _G.Modules["ESP"] then 
+                _G.Modules["ESP"].Enabled = v 
+            else
+                warn("🍊 ESP модуль не загружен")
+            end
         end)
     end
 end
 
--- КНОПКИ САЙДБАРА
+-- [КНОПКИ САЙДБАРА]
 local function addSidebarButton(name)
     local t = Instance.new("TextButton", TabHolder)
     t.Size = UDim2.new(1, 0, 0, 45)
@@ -178,9 +190,9 @@ end
 
 addSidebarButton("Player")
 addSidebarButton("Combat")
-showTab("Player")
+showTab("Player") -- Открываем Player по умолчанию
 
--- КНОПКИ СВЕРНУТЬ/РАЗВЕРНУТЬ
+-- [СИСТЕМА СВОРАЧИВАНИЯ]
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
@@ -201,7 +213,15 @@ OpenBtn.Active = true
 OpenBtn.Draggable = true
 OpenBtn.ZIndex = 20
 
-Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
-OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
+Collapse.MouseButton1Click:Connect(function() 
+    Main.Visible = false 
+    OpenBtn.Visible = true 
+end)
 
+OpenBtn.MouseButton1Click:Connect(function() 
+    Main.Visible = true 
+    OpenBtn.Visible = false 
+end)
+
+print("🍊 [OrangeHub]: UI успешно запущен!")
 return gui
