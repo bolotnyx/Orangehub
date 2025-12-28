@@ -1,7 +1,7 @@
 _G.Modules = {}
 
 local userName = "bolotnyx"
-local repoName = "Orangehub" -- Все как ты сказал
+local repoName = "Orangehub"
 local branch = "main"
 
 local function getRawUrl(path)
@@ -16,14 +16,13 @@ local function LoadModule(name, path)
     
     if success then
         _G.Modules[name] = result
-        print("🍊 [Orange Hub]: " .. name .. " загружен успешно!")
+        print("🍊 [Orange Hub]: " .. name .. " загружен!")
     else
-        -- Это поможет нам увидеть в F9, если ссылка битая
-        warn("🍊 [Orange Hub]: ОШИБКА ЗАГРУЗКИ " .. name .. " по адресу: " .. url)
+        warn("🍊 [Orange Hub]: Ошибка загрузки модуля " .. name)
     end
 end
 
--- ЗАГРУЗКА (Проверь, что папка Modules с большой буквы на GitHub!)
+-- ЗАГРУЗКА ВСЕХ МОДУЛЕЙ
 LoadModule("Fly", "Modules/Fly.lua")
 LoadModule("InfiniteJump", "Modules/InfiniteJump.lua")
 LoadModule("FullBright", "Modules/FullBright.lua")
@@ -31,12 +30,13 @@ LoadModule("ESP", "Modules/ESP.lua")
 LoadModule("Combat", "Modules/Combat.lua")
 LoadModule("AntiAFK", "Modules/AntiAFK.lua")
 
--- ЗАПУСК UI
+-- ЗАПУСК ИНТЕРФЕЙСА (UI.lua должен быть в корне репозитория)
 local uiUrl = getRawUrl("UI.lua")
-local uiSuccess, uiResult = pcall(function()
-    return loadstring(game:HttpGet(uiUrl))()
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(uiUrl))()
+    end)
+    if not success then
+        warn("🍊 [Orange Hub]: Ошибка UI: " .. tostring(err))
+    end
 end)
-
-if not uiSuccess then
-    warn("🍊 [Orange Hub]: UI не скачался! Проверь файл UI.lua в корне.")
-end
