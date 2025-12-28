@@ -16,27 +16,21 @@ local function LoadModule(name, path)
     
     if success then
         _G.Modules[name] = result
-        print("🍊 [Orange Hub]: " .. name .. " загружен!")
     else
-        warn("🍊 [Orange Hub]: Ошибка загрузки модуля " .. name)
+        warn("Ошибка загрузки: " .. name)
     end
 end
 
--- ЗАГРУЗКА ВСЕХ МОДУЛЕЙ
-LoadModule("Fly", "Modules/Fly.lua")
+-- Загружаем только два нужных нам модуля для теста
 LoadModule("InfiniteJump", "Modules/InfiniteJump.lua")
 LoadModule("FullBright", "Modules/FullBright.lua")
-LoadModule("ESP", "Modules/ESP.lua")
-LoadModule("Combat", "Modules/Combat.lua")
-LoadModule("AntiAFK", "Modules/AntiAFK.lua")
 
--- ЗАПУСК ИНТЕРФЕЙСА (UI.lua должен быть в корне репозитория)
+-- Загружаем UI
 local uiUrl = getRawUrl("UI.lua")
-task.spawn(function()
-    local success, err = pcall(function()
-        loadstring(game:HttpGet(uiUrl))()
-    end)
-    if not success then
-        warn("🍊 [Orange Hub]: Ошибка UI: " .. tostring(err))
-    end
+local success, err = pcall(function()
+    loadstring(game:HttpGet(uiUrl))()
 end)
+
+if not success then
+    print("Ошибка UI: " .. tostring(err))
+end
