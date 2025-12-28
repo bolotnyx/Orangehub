@@ -3,9 +3,14 @@ if game.CoreGui:FindFirstChild("OrangeHub_V4") then
     game.CoreGui["OrangeHub_V4"]:Destroy() 
 end
 
+local LP = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
+
+-- ПЕРЕМЕННЫЕ ДЛЯ СКОРОСТИ
+_G.WalkSpeedValue = 100
+_G.FlySpeedValue = 50
 
 -- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
@@ -59,6 +64,27 @@ Container.ScrollBarThickness = 2
 Container.ZIndex = 2
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
+-- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (ДЛЯ СКОРОСТИ)
+local function createInput(name, callback)
+    local box = Instance.new("TextBox", Container)
+    box.Size = UDim2.new(1, -10, 0, 40)
+    box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+    box.PlaceholderText = name
+    box.Text = ""
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 14
+    Instance.new("UICorner", box)
+    
+    box.FocusLost:Connect(function(enter)
+        if enter then
+            local num = tonumber(box.Text)
+            if num then callback(num) end
+            box.Text = ""
+        end
+    end)
+end
+
 -- Функция создания тоггла
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
@@ -95,29 +121,41 @@ end
 -- ЛОГИКА ВКЛАДОК
 local function showTab(name)
     for _, v in ipairs(Container:GetChildren()) do 
-        if v:IsA("TextButton") then v:Destroy() end 
+        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end 
     end
     
     if name == "Player" then
+        -- Настройка и включение скорости
+        createInput("Введите скорость бега (число)", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
-            game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = v and 100 or 16 
+            _G.SpeedEnabled = v
+            task.spawn(function()
+                while _G.SpeedEnabled do
+                    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+                        LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue
+                    end
+                    task.wait(0.1)
+                end
+                LP.Character.Humanoid.WalkSpeed = 16
+            end)
         end)
+
+        -- Настройка и включение полёта
+        createInput("Введите скорость полёта", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
-            if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
+            if _G.Modules["Fly"] then 
+                _G.Modules["Fly"].Speed = _G.FlySpeedValue
+                _G.Modules["Fly"].Enabled = v 
+            end
         end)
+        
         createToggle("Anti-AFK", function(v)
             if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
         end)
     elseif name == "Combat" then
-        -- ТУТ ТВОЙ ESP
         createToggle("ESP Items & Monsters", function(v)
-            if _G.Modules["ESP"] then 
-                _G.Modules["ESP"].Enabled = v 
-            else
-                warn("ESP Module not found!")
-            end
+            if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
-        
         createToggle("KillAura", function(v)
             if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
@@ -136,12 +174,11 @@ local function addSidebarButton(name)
     t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
--- Кнопки
 addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
--- Закрытие/Открытие
+-- Кнопки открытия/закрытия
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
