@@ -4,24 +4,24 @@ local FullBrightModule = {
 
 local Lighting = game:GetService("Lighting")
 
--- Сохраняем стандартные настройки игры, чтобы вернуть их при выключении
-local defaultAmbient = Lighting.Ambient
-local defaultOutdoor = Lighting.OutdoorAmbient
-local defaultBrightness = Lighting.Brightness
+-- Сохраняем оригинальные настройки, чтобы можно было выключить
+local origAmbient = Lighting.Ambient
+local origBrightness = Lighting.Brightness
+local origShadows = Lighting.GlobalShadows
 
 task.spawn(function()
-    while task.wait(0.5) do
+    while true do
         if FullBrightModule.Enabled then
-            Lighting.Ambient = Color3.new(1, 1, 1)
-            Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+            Lighting.Ambient = Color3.fromRGB(255, 255, 255)
+            Lighting.OutdoorAmbient = Color3.fromRGB(255, 255, 255)
             Lighting.Brightness = 2
+            Lighting.GlobalShadows = false -- Убираем тени
+            Lighting.ClockTime = 12 -- Всегда полдень
         else
-            -- Если выключили, возвращаем как было
-            -- (Можно закомментировать, если хочешь, чтобы свет оставался)
-            -- Lighting.Ambient = defaultAmbient
-            -- Lighting.OutdoorAmbient = defaultOutdoor
-            -- Lighting.Brightness = defaultBrightness
+            -- Если нужно, можно раскомментировать строки ниже для возврата к норме:
+            -- Lighting.GlobalShadows = origShadows
         end
+        task.wait(0.2) -- Частая проверка
     end
 end)
 
