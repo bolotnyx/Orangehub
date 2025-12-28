@@ -1,41 +1,48 @@
+-- [[ ORANGE HUB V4 - ПРЯМОЕ ЯДРО ]]
 repeat task.wait() until game:IsLoaded()
 
+-- Защита от дублей
 if _G.OrangeHubLoaded then
-    warn("🍊 OrangeHub уже загружен")
+    warn("🍊 OrangeHub уже запущен!")
     return
 end
 _G.OrangeHubLoaded = true
+
+print("🍊 OrangeHub: Начинаю прямую загрузку модулей...")
+
 _G.Modules = {}
 
-local BASE_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/"
-
-local ModuleList = {
-    {Name = "Player", Path = "Modules/Player.lua"},
-    {Name = "Combat", Path = "Modules/Combat.lua"},
-    {Name = "ESP",    Path = "Modules/ESP.lua"},
-    {Name = "UI",     Path = "Modules/UI.lua"} -- ПУТЬ ИСПРАВЛЕН
+-- Прямые ссылки (Проверь, чтобы названия файлов на GitHub точно совпадали!)
+local files = {
+    ["Player"] = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/Player.lua",
+    ["Combat"] = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/Combat.lua",
+    ["ESP"]    = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/ESP.lua",
+    ["UI"]     = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/UI.lua"
 }
 
-print("🍊 OrangeHub: Запуск...")
-
-for _, mod in ipairs(ModuleList) do
-    local url = BASE_URL .. mod.Path .. "?t=" .. os.time()
-    local success, source = pcall(function() return game:HttpGet(url) end)
-    
-    if success and source and not source:find("404: Not Found") then
-        local func, err = loadstring(source)
-        if func then
-            local modSuccess, result = pcall(func)
-            if modSuccess then
-                _G.Modules[mod.Name] = result
-                print("✅ Загружен: " .. mod.Name)
+for name, url in pairs(files) do
+    task.spawn(function()
+        local success, source = pcall(function() 
+            return game:HttpGet(url .. "?t=" .. os.time()) 
+        end)
+        
+        if success and source and not source:find("404") then
+            local func, err = loadstring(source)
+            if func then
+                local modSuccess, result = pcall(func)
+                if modSuccess then
+                    _G.Modules[name] = result
+                    print("✅ Модуль [" .. name .. "] загружен")
+                else
+                    warn("❌ Ошибка выполнения модуля " .. name .. ": " .. tostring(result))
+                end
             else
-                warn("❌ Ошибка выполнения " .. mod.Name .. ": " .. tostring(result))
+                warn("❌ Ошибка кода в " .. name .. ": " .. tostring(err))
             end
         else
-            warn("❌ Ошибка кода в " .. mod.Name .. ": " .. tostring(err))
+            warn("❌ Не удалось скачать файл: " .. name .. " (Проверь ссылку!)")
         end
-    else
-        warn("❌ Не найден файл: " .. mod.Path)
-    end
+    end)
 end
+
+print("🍊 OrangeHub: Все запросы отправлены. Проверь наличие UI.")
