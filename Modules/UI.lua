@@ -4,22 +4,20 @@ if game.CoreGui:FindFirstChild("OrangeHub_V4") then
 end
 
 local LP = game.Players.LocalPlayer
-local Lighting = game:GetService("Lighting")
-local UserInputService = game:GetService("UserInputService")
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+-- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ (Связь с модулями)
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
-_G.InfJumpEnabled = false
 
 -- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
 Main.Size = UDim2.new(0, 500, 0, 350)
 Main.Position = UDim2.new(0.5, -250, 0.5, -175)
 Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
+Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
@@ -66,14 +64,7 @@ Container.ScrollBarThickness = 2
 Container.ZIndex = 5
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- ЛОГИКА INFINITE JUMP
-UserInputService.JumpRequest:Connect(function()
-    if _G.InfJumpEnabled then
-        LP.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-    end
-end)
-
--- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА
+-- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (TextBox)
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 40)
@@ -87,9 +78,13 @@ local function createInput(name, callback)
     box.Active = true
     box.ClearTextOnFocus = true
     Instance.new("UICorner", box)
+    
     box.FocusLost:Connect(function(enter)
         local num = tonumber(box.Text)
-        if num then callback(num) box.PlaceholderText = "Сейчас: "..num end
+        if num then 
+            callback(num) 
+            box.PlaceholderText = "Сейчас: " .. num
+        end
         box.Text = ""
     end)
 end
@@ -133,10 +128,11 @@ end
 -- ЛОГИКА ВКЛАДОК
 local function showTab(name)
     for _, v in ipairs(Container:GetChildren()) do 
-        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end 
+        if not v:IsA("UIListLayout") then v:Destroy() end 
     end
     
     if name == "Player" then
+        -- СКОРОСТЬ БЕГА
         createInput("СКОРОСТЬ БЕГА", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
@@ -151,38 +147,40 @@ local function showTab(name)
             end)
         end)
 
+        -- ПОЛЕТ
         createInput("СКОРОСТЬ ПОЛЕТА", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
             if _G.Modules and _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
         end)
 
-        -- НОВЫЕ ФУНКЦИИ
-        createToggle("Infinite Jump", function(v) _G.InfJumpEnabled = v end)
+        -- INFINITE JUMP (Твой новый модуль)
+        createToggle("Infinite Jump", function(v)
+            if _G.Modules and _G.Modules["InfiniteJump"] then _G.Modules["InfiniteJump"].Enabled = v end
+        end)
+
+        -- FULL BRIGHT (Твой новый модуль)
         createToggle("FullBright", function(v)
-            if v then
-                Lighting.Ambient = Color3.new(1, 1, 1)
-                Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
-                Lighting.Brightness = 2
-            else
-                Lighting.Ambient = Color3.fromRGB(127, 127, 127)
-                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
-                Lighting.Brightness = 1
-            end
+            if _G.Modules and _G.Modules["FullBright"] then _G.Modules["FullBright"].Enabled = v end
         end)
         
+        -- ANTI-AFK
         createToggle("Anti-AFK", function(v)
             if _G.Modules and _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
         end)
+
     elseif name == "Combat" then
+        -- ESP
         createToggle("ESP Monsters & Items", function(v)
             if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
+        -- KILL AURA
         createToggle("KillAura", function(v)
             if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
     end
 end
 
+-- КНОПКИ САЙДБАРА
 local function addSidebarButton(name)
     local t = Instance.new("TextButton", TabHolder)
     t.Size = UDim2.new(1, 0, 0, 45)
@@ -200,6 +198,7 @@ addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
+-- УПРАВЛЕНИЕ ОКНОМ (Закрыть/Открыть)
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
