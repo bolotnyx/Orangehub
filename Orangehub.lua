@@ -26,5 +26,6 @@ end
 Load("Player")
 Load("Fly")
 Load("InfiniteJump")
+Load("FullBright")
 Load("ESP")
 Load("UI") 
