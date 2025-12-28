@@ -25,5 +25,6 @@ end
 -- Важен порядок: UI всегда последний
 Load("Player")
 Load("Fly")
+Load("InfiniteJump")
 Load("ESP")
 Load("UI") 
