@@ -4,6 +4,8 @@ if game.CoreGui:FindFirstChild("OrangeHub_V4") then
 end
 
 local LP = game.Players.LocalPlayer
+local Lighting = game:GetService("Lighting")
+local UserInputService = game:GetService("UserInputService")
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
@@ -11,13 +13,13 @@ gui.ResetOnSpawn = false
 -- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
+_G.InfJumpEnabled = false
 
 -- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
 Main.Size = UDim2.new(0, 500, 0, 350)
 Main.Position = UDim2.new(0.5, -250, 0.5, -175)
 Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
-Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
@@ -29,7 +31,7 @@ Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
 Accent.ZIndex = 11
 Instance.new("UICorner", Accent)
 
--- САЙДБАР (Сделал чуть шире для удобства)
+-- САЙДБАР
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 150, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
@@ -52,8 +54,7 @@ TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
 TabHolder.ZIndex = 3
-local TabList = Instance.new("UIListLayout", TabHolder)
-TabList.Padding = UDim.new(0, 8)
+Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 8)
 
 -- КОНТЕЙНЕР ФУНКЦИЙ
 local Container = Instance.new("ScrollingFrame", Main)
@@ -65,10 +66,16 @@ Container.ScrollBarThickness = 2
 Container.ZIndex = 5
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
+-- ЛОГИКА INFINITE JUMP
+UserInputService.JumpRequest:Connect(function()
+    if _G.InfJumpEnabled then
+        LP.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
 -- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
-    box.Name = "Input"
     box.Size = UDim2.new(1, -10, 0, 40)
     box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
     box.PlaceholderText = name
@@ -80,13 +87,9 @@ local function createInput(name, callback)
     box.Active = true
     box.ClearTextOnFocus = true
     Instance.new("UICorner", box)
-    
     box.FocusLost:Connect(function(enter)
         local num = tonumber(box.Text)
-        if num then 
-            callback(num) 
-            box.PlaceholderText = "Сейчас: " .. num
-        end
+        if num then callback(num) box.PlaceholderText = "Сейчас: "..num end
         box.Text = ""
     end)
 end
@@ -94,7 +97,6 @@ end
 -- ФУНКЦИЯ СОЗДАНИЯ ТОГГЛА
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
-    btn.Name = "Toggle"
     btn.Size = UDim2.new(1, -10, 0, 45)
     btn.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
     btn.Text = "   " .. name
@@ -135,7 +137,7 @@ local function showTab(name)
     end
     
     if name == "Player" then
-        createInput("СКОРОСТЬ БЕГА (10-200)", function(v) _G.WalkSpeedValue = v end)
+        createInput("СКОРОСТЬ БЕГА", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
             task.spawn(function()
@@ -149,16 +151,29 @@ local function showTab(name)
             end)
         end)
 
-        createInput("СКОРОСТЬ ПОЛЕТА (10-500)", function(v) _G.FlySpeedValue = v end)
+        createInput("СКОРОСТЬ ПОЛЕТА", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
             if _G.Modules and _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
+        end)
+
+        -- НОВЫЕ ФУНКЦИИ
+        createToggle("Infinite Jump", function(v) _G.InfJumpEnabled = v end)
+        createToggle("FullBright", function(v)
+            if v then
+                Lighting.Ambient = Color3.new(1, 1, 1)
+                Lighting.OutdoorAmbient = Color3.new(1, 1, 1)
+                Lighting.Brightness = 2
+            else
+                Lighting.Ambient = Color3.fromRGB(127, 127, 127)
+                Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+                Lighting.Brightness = 1
+            end
         end)
         
         createToggle("Anti-AFK", function(v)
             if _G.Modules and _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
         end)
     elseif name == "Combat" then
-        -- ВОЗВРАЩАЕМ ESP
         createToggle("ESP Monsters & Items", function(v)
             if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
@@ -170,23 +185,21 @@ end
 
 local function addSidebarButton(name)
     local t = Instance.new("TextButton", TabHolder)
-    t.Size = UDim2.new(1, 0, 0, 45) -- Сделал кнопки выше (были 40)
+    t.Size = UDim2.new(1, 0, 0, 45)
     t.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
     t.Text = name
     t.TextColor3 = Color3.new(1, 1, 1)
     t.Font = Enum.Font.GothamBold
-    t.TextSize = 16 -- Сделал текст крупнее
+    t.TextSize = 16
     t.ZIndex = 4
     Instance.new("UICorner", t)
     t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
--- Кнопки сайдбара
 addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
--- Закрытие/Открытие
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
