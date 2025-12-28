@@ -8,7 +8,7 @@ local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 gui.ResetOnSpawn = false
 
--- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+-- ПЕРЕМЕННЫЕ ДЛЯ СКОРОСТИ (Начальные значения)
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
 
@@ -26,7 +26,7 @@ Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 local Accent = Instance.new("Frame", Main)
 Accent.Size = UDim2.new(1, 0, 0, 3)
 Accent.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-Accent.ZIndex = 10 -- Поверх всего
+Accent.ZIndex = 11
 Instance.new("UICorner", Accent)
 
 -- САЙДБАР
@@ -61,10 +61,10 @@ Container.Position = UDim2.new(0, 150, 0, 55)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
-Container.ZIndex = 5 -- Выше фона окна
+Container.ZIndex = 5
 Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
 
--- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (ИСПРАВЛЕНА ДЛЯ ТЕЛЕФОНА)
+-- ФУНКЦИЯ СОЗДАНИЯ ПОЛЯ ВВОДА (ДЛЯ СКОРОСТИ)
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 40)
@@ -74,15 +74,15 @@ local function createInput(name, callback)
     box.TextColor3 = Color3.new(1, 1, 1)
     box.Font = Enum.Font.GothamBold
     box.TextSize = 14
-    box.ZIndex = 6
-    box.Active = true -- Позволяет кликать
-    box.Interactable = true -- Специально для новых версий Roblox
+    box.ZIndex = 10 -- Делаем самым верхним, чтобы нажималось
+    box.Active = true
+    box.ClearTextOnFocus = true
     Instance.new("UICorner", box)
     
     box.FocusLost:Connect(function(enter)
         local num = tonumber(box.Text)
         if num then 
-            callback(num)
+            callback(num) 
             box.PlaceholderText = "Тек: " .. num
         end
         box.Text = ""
@@ -132,7 +132,7 @@ local function showTab(name)
     end
     
     if name == "Player" then
-        createInput("СКОРОСТЬ БЕГА (100)", function(v) _G.WalkSpeedValue = v end)
+        createInput("СКОРОСТЬ БЕГА", function(v) _G.WalkSpeedValue = v end)
         createToggle("Speed Hack", function(v) 
             _G.SpeedEnabled = v
             task.spawn(function()
@@ -142,19 +142,25 @@ local function showTab(name)
                     end
                     task.wait(0.1)
                 end
-                if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
+                if LP.Character and LP.Character:FindFirstChild("Humanoid") then 
+                    LP.Character.Humanoid.WalkSpeed = 16 
+                end
             end)
         end)
 
-        createInput("СКОРОСТЬ ПОЛЕТА (50)", function(v) _G.FlySpeedValue = v end)
+        createInput("СКОРОСТЬ ПОЛЕТА", function(v) _G.FlySpeedValue = v end)
         createToggle("Fly (Joystick)", function(v)
             if _G.Modules and _G.Modules["Fly"] then 
                 _G.Modules["Fly"].Enabled = v 
             end
         end)
+        
+        createToggle("Anti-AFK", function(v)
+            if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
+        end)
     elseif name == "Combat" then
         createToggle("KillAura", function(v)
-            if _G.Modules and _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+            if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
         end)
     end
 end
@@ -175,12 +181,14 @@ addSidebarButton("Player")
 addSidebarButton("Combat")
 showTab("Player")
 
+-- Кнопки закрытия и иконка открытия
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 26, 0, 26)
 Collapse.Position = UDim2.new(1, -32, 0, 8)
 Collapse.Text = "—"
 Collapse.ZIndex = 11
 Collapse.BackgroundColor3 = Color3.fromRGB(45, 45, 47)
+Collapse.TextColor3 = Color3.new(1, 1, 1)
 Instance.new("UICorner", Collapse)
 
 local OpenBtn = Instance.new("TextButton", gui)
@@ -192,6 +200,7 @@ OpenBtn.BackgroundTransparency = 1
 OpenBtn.Visible = false
 OpenBtn.Active = true
 OpenBtn.Draggable = true
+OpenBtn.ZIndex = 20
 
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
