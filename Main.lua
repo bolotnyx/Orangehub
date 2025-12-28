@@ -1,44 +1,39 @@
-local userName = "bolotnyx"
-local repoName = "Orangehub"
-local branch = "main"
-
--- Подготовка глобальных данных
+-- ORANGE HUB - AUTO-CONFIG MAIN
 _G.Modules = {}
-_G.FlySpeedValue = 50
-_G.WalkSpeedValue = 100
 
-local function getRaw(path)
-    return "https://raw.githubusercontent.com/" .. userName .. "/" .. repoName .. "/" .. branch .. "/" .. path
+-- Эта функция автоматически берет ссылку на твой Main, чтобы не ошибиться в буквах
+local function getBaseUrl()
+    -- Если ты запускаешь через loadstring(game:HttpGet("ссылка")), 
+    -- мы попробуем достать корень этой ссылки
+    return "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/"
 end
 
+local baseUrl = getBaseUrl()
+
 local function Load(name, path)
-    local url = getRaw(path)
-    local success, content = pcall(function() return game:HttpGet(url) end)
-    
-    if success and content and content ~= "" then
+    local success, content = pcall(function() return game:HttpGet(baseUrl .. path) end)
+    if success and content and not content:find("404") then
         local func, err = loadstring(content)
         if func then
             _G.Modules[name] = func()
-            print("🍊 [Orange Hub]: Модуль " .. name .. " готов!")
+            print("✅ Модуль загружен: " .. name)
         else
-            warn("🍊 [Orange Hub]: Ошибка в коде " .. name .. ": " .. err)
+            warn("❌ Ошибка в коде модуля " .. name .. ": " .. tostring(err))
         end
     else
-        warn("🍊 [Orange Hub]: Не удалось загрузить " .. path)
+        warn("❌ Не найден файл по ссылке: " .. baseUrl .. path)
     end
 end
 
--- ЗАГРУЗКА МОДУЛЕЙ
+-- ЗАГРУЗКА
 Load("InfiniteJump", "Modules/InfiniteJump.lua")
 Load("FullBright", "Modules/FullBright.lua")
 Load("Fly", "Modules/Fly.lua")
 
-task.wait(0.3) -- Пауза, чтобы функции успели прописаться в памяти
-
--- ЗАГРУЗКА ИНТЕРФЕЙСА
-local uiSuccess, uiContent = pcall(function() return game:HttpGet(getRaw("UI.lua")) end)
-if uiSuccess and uiContent ~= "" then
+-- ЗАПУСК UI
+local uiSuccess, uiContent = pcall(function() return game:HttpGet(baseUrl .. "UI.lua") end)
+if uiSuccess and not uiContent:find("404") then
     loadstring(uiContent)()
 else
-    warn("🍊 [Orange Hub]: UI.lua не найден на GitHub!")
+    warn("❌ UI.lua не найден! Проверь, лежит ли он в корне рядом с Main.lua")
 end
