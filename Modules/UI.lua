@@ -1,4 +1,4 @@
--- [[ ORANGE HUB V4 - UI FIXED ]]
+-- [[ ORANGE HUB V4 - UI FIXED (SPEED & FLY) ]]
 local LP = game.Players.LocalPlayer
 if game.CoreGui:FindFirstChild("OrangeHub_V4") then game.CoreGui.OrangeHub_V4:Destroy() end
 
@@ -14,7 +14,7 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main)
 
--- Заголовок (ORANGE HUB)
+-- Сайдбар и Заголовок
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 150, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
@@ -25,7 +25,7 @@ Title.Size = UDim2.new(1, 0, 0, 60)
 Title.Text = "ORANGE HUB"
 Title.TextColor3 = Color3.fromRGB(255, 165, 0)
 Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22 -- Крупный шрифт
+Title.TextSize = 22
 Title.BackgroundTransparency = 1
 
 -- Кнопка сворачивания (—)
@@ -50,23 +50,41 @@ OpenBtn.Draggable = true
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 
--- Контейнер для кнопок
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -170, 1, -70)
 Container.Position = UDim2.new(0, 160, 0, 60)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
-Instance.new("UIListLayout", Container).Padding = UDim.new(0, 10)
+local Layout = Instance.new("UIListLayout", Container)
+Layout.Padding = UDim.new(0, 10)
 
--- Функции отрисовки (Toggle/Input)
+-- УТИЛИТА: Поле ввода
+local function createInput(name, callback)
+    local box = Instance.new("TextBox", Container)
+    box.Size = UDim2.new(1, -10, 0, 45)
+    box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+    box.PlaceholderText = name
+    box.Text = ""
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 14
+    Instance.new("UICorner", box)
+    box.FocusLost:Connect(function()
+        local num = tonumber(box.Text)
+        if num then callback(num) end
+        box.Text = ""
+    end)
+end
+
+-- УТИЛИТА: Переключатель
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
-    btn.Size = UDim2.new(1, -10, 0, 50) -- Крупнее для пальцев
+    btn.Size = UDim2.new(1, -10, 0, 45)
     btn.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
     btn.Text = "   " .. name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 16
+    btn.TextSize = 14
     btn.TextXAlignment = "Left"
     Instance.new("UICorner", btn)
 
@@ -78,14 +96,51 @@ local function createToggle(name, callback)
     end)
 end
 
--- Вкладки
+-- ВКЛАДКИ
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, 0, 1, -80)
 TabHolder.Position = UDim2.new(0, 0, 0, 70)
 TabHolder.BackgroundTransparency = 1
 Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
 
-local function addTab(name)
+local function showTab(name)
+    for _, v in pairs(Container:GetChildren()) do if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end end
+    
+    if name == "Player" then
+        createInput("СКОРОСТЬ (Число)", function(v) 
+            _G.WalkSpeedValue = v 
+            _G.FlySpeedValue = v -- Теперь скорость полета такая же
+        end)
+        
+        createToggle("Speed Hack", function(v) 
+            _G.SpeedEnabled = v 
+            task.spawn(function()
+                while _G.SpeedEnabled do
+                    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+                        LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue or 100
+                    end
+                    task.wait(0.1)
+                end
+                if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
+            end)
+        end)
+        
+        createToggle("Fly Mode", function(v) 
+            if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end 
+        end)
+        
+        createToggle("Inf Jump", function(v) 
+            if _G.Modules.Player then _G.Modules.Player.InfJumpEnabled = v end 
+        end)
+        
+    elseif name == "Combat" then
+        createToggle("ESP Monsters", function(v) 
+            if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end 
+        end)
+    end
+end
+
+local function addTabBtn(name)
     local t = Instance.new("TextButton", TabHolder)
     t.Size = UDim2.new(1, 0, 0, 45)
     t.Text = name
@@ -93,18 +148,10 @@ local function addTab(name)
     t.TextSize = 16
     t.TextColor3 = Color3.new(1, 1, 1)
     t.BackgroundTransparency = 1
-    t.MouseButton1Click:Connect(function()
-        for _, v in pairs(Container:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
-        if name == "Player" then
-            createToggle("Speed Hack", function(v) _G.SpeedEnabled = v end)
-            createToggle("Fly Mode", function(v) if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end end)
-            createToggle("Inf Jump", function(v) if _G.Modules.Player then _G.Modules.Player.InfJumpEnabled = v end end)
-        elseif name == "Combat" then
-            createToggle("ESP Monsters", function(v) if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end end)
-        end
-    end)
+    t.MouseButton1Click:Connect(function() showTab(name) end)
 end
 
-addTab("Player")
-addTab("Combat")
+addTabBtn("Player")
+addTabBtn("Combat")
+showTab("Player")
 return gui
