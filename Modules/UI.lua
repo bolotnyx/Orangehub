@@ -11,6 +11,7 @@ gui.ResetOnSpawn = false
 -- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 _G.WalkSpeedValue = 100
 _G.FlySpeedValue = 50
+if not _G.Modules then _G.Modules = {} end -- Защита: создаем таблицу, если Main.lua еще не успел
 
 -- ГЛАВНОЕ ОКНО
 local Main = Instance.new("Frame", gui)
@@ -52,8 +53,7 @@ TabHolder.Size = UDim2.new(1, -10, 1, -80)
 TabHolder.Position = UDim2.new(0, 5, 0, 70)
 TabHolder.BackgroundTransparency = 1
 TabHolder.ZIndex = 3
-local TabList = Instance.new("UIListLayout", TabHolder)
-TabList.Padding = UDim.new(0, 8)
+Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 8)
 
 -- КОНТЕЙНЕР ФУНКЦИЙ
 local Container = Instance.new("ScrollingFrame", Main)
@@ -118,7 +118,7 @@ local function createToggle(name, callback)
         enabled = not enabled
         dot:TweenPosition(enabled and UDim2.new(1, -15, 0.5, -6) or UDim2.new(0, 3, 0.5, -6), "Out", "Sine", 0.15, true)
         bg.BackgroundColor3 = enabled and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(60, 60, 60)
-        if callback then pcall(callback, enabled) end
+        if callback then task.spawn(pcall, callback, enabled) end
     end)
 end
 
@@ -143,29 +143,21 @@ local function showTab(name)
             end)
         end)
 
-        createInput("СКОРОСТЬ ПОЛЕТА", function(v) _G.FlySpeedValue = v end)
-        createToggle("Fly (Joystick)", function(v)
-            if _G.Modules["Fly"] then _G.Modules["Fly"].Enabled = v end
-        end)
-
         createToggle("Infinite Jump", function(v)
-            if _G.Modules["InfiniteJump"] then _G.Modules["InfiniteJump"].Enabled = v end
+            if _G.Modules and _G.Modules["InfiniteJump"] then 
+                _G.Modules["InfiniteJump"].Enabled = v 
+            end
         end)
 
         createToggle("FullBright", function(v)
-            if _G.Modules["FullBright"] then _G.Modules["FullBright"].Enabled = v end
-        end)
-
-        createToggle("Anti-AFK", function(v)
-            if _G.Modules["AntiAFK"] then _G.Modules["AntiAFK"].Enabled = v end
+            if _G.Modules and _G.Modules["FullBright"] then 
+                _G.Modules["FullBright"].Enabled = v 
+            end
         end)
 
     elseif name == "Combat" then
         createToggle("ESP Monsters & Items", function(v)
-            if _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
-        end)
-        createToggle("KillAura", function(v)
-            if _G.Modules["Combat"] then _G.Modules["Combat"].KillAura = v end
+            if _G.Modules and _G.Modules["ESP"] then _G.Modules["ESP"].Enabled = v end
         end)
     end
 end
