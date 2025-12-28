@@ -1,13 +1,14 @@
--- [[ ORANGE HUB V4 - UI FIXED ]]
+-- [[ ORANGE HUB V4 - UI ENHANCED ]]
 local LP = game.Players.LocalPlayer
 if game.CoreGui:FindFirstChild("OrangeHub_V4") then game.CoreGui.OrangeHub_V4:Destroy() end
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 
+-- Главная панель
 local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 500, 0, 350)
-Main.Position = UDim2.new(0.5, -250, 0.5, -175)
+Main.Size = UDim2.new(0, 520, 0, 360)
+Main.Position = UDim2.new(0.5, -260, 0.5, -180)
 Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
 Main.BorderSizePixel = 0
 Main.Active = true
@@ -16,7 +17,7 @@ Instance.new("UICorner", Main)
 
 -- Сайдбар
 local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 150, 1, 0)
+Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
 Instance.new("UICorner", Sidebar)
 
@@ -50,15 +51,17 @@ OpenBtn.Draggable = true
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 
+-- Контейнер для кнопок и полей
 local Container = Instance.new("ScrollingFrame", Main)
-Container.Size = UDim2.new(1, -170, 1, -70)
-Container.Position = UDim2.new(0, 160, 0, 60)
+Container.Size = UDim2.new(1, -180, 1, -70)
+Container.Position = UDim2.new(0, 170, 0, 60)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 local Layout = Instance.new("UIListLayout", Container)
 Layout.Padding = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Функция создания поля ввода
+-- Создание поля ввода
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 45)
@@ -72,11 +75,11 @@ local function createInput(name, callback)
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
         if num then callback(num) end
-        box.Text = "" -- Очистка
+        box.Text = ""
     end)
 end
 
--- Функция создания кнопки
+-- Создание toggle-кнопки
 local function createToggle(name, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
@@ -101,16 +104,19 @@ local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, 0, 1, -80)
 TabHolder.Position = UDim2.new(0, 0, 0, 70)
 TabHolder.BackgroundTransparency = 1
-Instance.new("UIListLayout", TabHolder).Padding = UDim.new(0, 5)
+local TabLayout = Instance.new("UIListLayout", TabHolder)
+TabLayout.Padding = UDim.new(0, 5)
+TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local function showTab(name)
-    for _, v in pairs(Container:GetChildren()) do if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end end
-    
+    for _, v in pairs(Container:GetChildren()) do
+        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end
+    end
+
     if name == "Player" then
-        -- 1. СКОРОСТЬ БЕГА
         createInput("WALK SPEED (Example: 100)", function(v) _G.WalkSpeedValue = v end)
-        createToggle("Enable Walk Speed", function(v) 
-            _G.SpeedEnabled = v 
+        createToggle("Enable Walk Speed", function(v)
+            _G.SpeedEnabled = v
             task.spawn(function()
                 while _G.SpeedEnabled do
                     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
@@ -121,20 +127,46 @@ local function showTab(name)
                 if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
             end)
         end)
-        
-        -- 2. СКОРОСТЬ ПОЛЕТА (НОВОЕ ПОЛЕ)
+
         createInput("FLY SPEED (Example: 50)", function(v) _G.FlySpeedValue = v end)
-        createToggle("Enable Fly", function(v) 
-            if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end 
+        createToggle("Enable Fly", function(v)
+            if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end
         end)
 
-        createToggle("Infinite Jump", function(v) 
-            if _G.Modules.Player then _G.Modules.Player.InfJumpEnabled = v end 
+        createToggle("Infinite Jump", function(v)
+            if _G.Modules.Player then
+                _G.Modules.Player.InfJumpEnabled = v
+            end
         end)
-        
+
+        createToggle("FullBright", function(v)
+            if v then
+                _G.OriginalLighting = {
+                    Brightness = game.Lighting.Brightness,
+                    ClockTime = game.Lighting.ClockTime,
+                    FogEnd = game.Lighting.FogEnd,
+                    FogStart = game.Lighting.FogStart,
+                    GlobalShadows = game.Lighting.GlobalShadows
+                }
+                game.Lighting.Brightness = 2
+                game.Lighting.ClockTime = 14
+                game.Lighting.FogEnd = 100000
+                game.Lighting.FogStart = 0
+                game.Lighting.GlobalShadows = false
+            else
+                if _G.OriginalLighting then
+                    game.Lighting.Brightness = _G.OriginalLighting.Brightness
+                    game.Lighting.ClockTime = _G.OriginalLighting.ClockTime
+                    game.Lighting.FogEnd = _G.OriginalLighting.FogEnd
+                    game.Lighting.FogStart = _G.OriginalLighting.FogStart
+                    game.Lighting.GlobalShadows = _G.OriginalLighting.GlobalShadows
+                end
+            end
+        end)
+
     elseif name == "Combat" then
-        createToggle("ESP Monsters", function(v) 
-            if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end 
+        createToggle("ESP Monsters", function(v)
+            if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end
         end)
     end
 end
@@ -153,4 +185,5 @@ end
 addTabBtn("Player")
 addTabBtn("Combat")
 showTab("Player")
+
 return gui
