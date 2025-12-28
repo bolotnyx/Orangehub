@@ -1,36 +1,38 @@
-_G.Modules = {}
-
 local userName = "bolotnyx"
 local repoName = "Orangehub"
 local branch = "main"
 
-local function getRawUrl(path)
+local function getRaw(path)
     return "https://raw.githubusercontent.com/" .. userName .. "/" .. repoName .. "/" .. branch .. "/" .. path
 end
 
-local function LoadModule(name, path)
-    local url = getRawUrl(path)
-    local success, result = pcall(function()
-        return loadstring(game:HttpGet(url))()
-    end)
-    
+-- Глобальная таблица для связи
+_G.Modules = {}
+
+-- Функция загрузки
+local function Load(name, path)
+    local success, content = pcall(function() return game:HttpGet(getRaw(path)) end)
     if success then
-        _G.Modules[name] = result
+        local func, err = loadstring(content)
+        if func then
+            _G.Modules[name] = func()
+        else
+            warn("Ошибка в коде модуля " .. name .. ": " .. tostring(err))
+        end
     else
-        warn("Ошибка загрузки: " .. name)
+        warn("Не удалось скачать модуль " .. name)
     end
 end
 
--- Загружаем только два нужных нам модуля для теста
-LoadModule("InfiniteJump", "Modules/InfiniteJump.lua")
-LoadModule("FullBright", "Modules/FullBright.lua")
+-- Сначала качаем функции (проверь, что файлы реально есть в папке Modules!)
+Load("InfiniteJump", "Modules/InfiniteJump.lua")
+Load("FullBright", "Modules/FullBright.lua")
+Load("Fly", "Modules/Fly.lua")
 
--- Загружаем UI
-local uiUrl = getRawUrl("UI.lua")
-local success, err = pcall(function()
-    loadstring(game:HttpGet(uiUrl))()
-end)
-
-if not success then
-    print("Ошибка UI: " .. tostring(err))
+-- В самом конце запускаем UI
+local uiSuccess, uiContent = pcall(function() return game:HttpGet(getRaw("UI.lua")) end)
+if uiSuccess then
+    loadstring(uiContent)()
+else
+    warn("Не удалось загрузить UI.lua")
 end
