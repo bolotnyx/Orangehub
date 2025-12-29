@@ -1,24 +1,19 @@
--- InfiniteJump.lua
-local InfiniteJumpEnabled = false
-local Player = game.Players.LocalPlayer
+-- [[ ORANGE HUB - INFINITE JUMP MODULE ]]
 local UIS = game:GetService("UserInputService")
-local Humanoid = Player.Character and Player.Character:WaitForChild("Humanoid")
+local LP = game:GetService("Players").LocalPlayer
 
--- Функция для включения и выключения Infinite Jump
-local function toggleInfiniteJump(state)
-    InfiniteJumpEnabled = state
-end
-
--- Подключение к событию прыжка
 UIS.JumpRequest:Connect(function()
-    if InfiniteJumpEnabled and Humanoid then
-        Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
-        Humanoid:Move(Vector3.new(0, 50, 0))  -- Этот код активирует прыжок
+    if _G.InfJumpEnabled then
+        local char = LP.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        
+        if hum then
+            -- Принудительно размораживаем перед прыжком, если застрял
+            hum.PlatformStand = false
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+        end
     end
 end)
 
--- Возвращаем функции для управления состоянием Infinite Jump
-return {
-    SetState = toggleInfiniteJump,
-    GetState = function() return InfiniteJumpEnabled end
-}
+print("🚀 Infinite Jump Loaded")
+return {Loaded = true}
