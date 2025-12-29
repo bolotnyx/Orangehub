@@ -1,30 +1,41 @@
--- [[ ORANGE HUB MODULE: GODMODE ]]
-local Player = game:GetService("Players").LocalPlayer
-local Character = Player.Character or Player.CharacterAdded:Wait()
+-- [[ ORANGE HUB - ULTIMATE GODMODE ]]
+local LP = game:GetService("Players").LocalPlayer
 
-local Godmode = {}
-
-function Godmode.Activate()
-    -- Метод 1: Удаление скриптов урона (работает во многих простых плейсах)
-    -- Мы ищем компоненты, которые отвечают за получение урона
-    local humanoid = Character:FindFirstChildOfClass("Humanoid")
+local function ActivateGodmode()
+    local Character = LP.Character
+    if not Character then return end
     
-    if humanoid then
-        -- Попытка заблокировать изменение здоровья локально
-        humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-        
-        -- Метод 2: "Fake Dead" (Персонаж не умирает при 0 HP в некоторых играх)
-        humanoid.Health = humanoid.MaxHealth
-        
-        local connection
-        connection = humanoid.HealthChanged:Connect(function(health)
-            if health < humanoid.MaxHealth then
-                humanoid.Health = humanoid.MaxHealth
+    local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+    if not Humanoid then return end
+
+    -- ЭФФЕКТ "БЕССМЕРТНОГО ПРИЗРАКА"
+    -- Мы отключаем состояния, в которых сервер может убить персонажа
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+    Humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+    
+    -- Цикл принудительного удержания жизни
+    task.spawn(function()
+        while _G.GodmodeEnabled do
+            if Character and Humanoid then
+                -- Возвращаем ХП на максимум каждый кадр
+                Humanoid.Health = Humanoid.MaxHealth
+                
+                -- Если сервер все-таки "убил" нас (HP = 0), мы принудительно воскрешаем модель локально
+                if Humanoid:GetState() == Enum.HumanoidStateType.Dead then
+                    Humanoid:ChangeState(Enum.HumanoidStateType.Physics)
+                end
             end
-        end)
+            task.wait() -- Ждем 1 кадр (максимальная скорость)
+        end
         
-        print("🛡️ [ORANGE HUB] Godmode Activated")
-    end
+        -- Если выключили — разрешаем умирать снова
+        if Humanoid then
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+        end
+    end)
 end
 
-return Godmode
+-- Запуск
+_G.GodmodeEnabled = true
+ActivateGodmode()
