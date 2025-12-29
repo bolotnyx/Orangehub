@@ -1,4 +1,4 @@
--- [[ ORANGE HUB V4 - FINAL CORE WITH PRO INTRO ]]
+-- [[ ORANGE HUB V4 - CINEMATIC INTRO ]]
 repeat task.wait() until game:IsLoaded()
 
 if _G.OrangeHubLoaded then return end
@@ -7,107 +7,91 @@ _G.OrangeHubLoaded = true
 -- ==========================================
 --        ПРОФЕССИОНАЛЬНАЯ АНИМАЦИЯ 🍊
 -- ==========================================
-local function ShowProfessionalIntro()
+local function RunCinematicIntro()
     local TweenService = game:GetService("TweenService")
     local CoreGui = game:GetService("CoreGui")
     local Lighting = game:GetService("Lighting")
     
-    -- Создаем контейнер интерфейса
     local sg = Instance.new("ScreenGui")
     sg.Name = "OrangeIntro"
     sg.DisplayOrder = 999
     sg.IgnoreGuiInset = true
     sg.Parent = CoreGui
 
-    -- Эффект размытия заднего плана
+    -- Размытие фона
     local blur = Instance.new("BlurEffect")
     blur.Size = 0
     blur.Parent = Lighting
-    TweenService:Create(blur, TweenInfo.new(1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = 20}):Play()
+    TweenService:Create(blur, TweenInfo.new(1), {Size = 25}):Play()
 
-    -- Главный фрейм на весь экран
     local main = Instance.new("Frame")
     main.Size = UDim2.new(1, 0, 1, 0)
     main.BackgroundTransparency = 1
     main.Parent = sg
 
-    -- Иконка Апельсина
+    -- 1. Появление Апельсина
     local logo = Instance.new("TextLabel")
     logo.Size = UDim2.new(0, 100, 0, 100)
-    logo.Position = UDim2.new(0.5, -50, 0.5, -60)
+    logo.Position = UDim2.new(0.5, -50, 0.45, -50)
     logo.BackgroundTransparency = 1
     logo.Text = "🍊"
-    logo.TextSize = 80
+    logo.TextSize = 100
     logo.TextTransparency = 1
-    logo.ZIndex = 2
     logo.Parent = main
 
-    -- Текст ORANGE HUB
+    TweenService:Create(logo, TweenInfo.new(1.2, Enum.EasingStyle.Back), {TextTransparency = 0, Position = UDim2.new(0.5, -50, 0.4, -50)}):Play()
+    task.wait(1.2)
+
+    -- 2. Постепенное появление надписи (по буквам)
     local title = Instance.new("TextLabel")
-    title.Size = UDim2.new(0, 300, 0, 50)
-    title.Position = UDim2.new(0.5, -150, 0.5, 40)
+    title.Size = UDim2.new(0, 400, 0, 50)
+    title.Position = UDim2.new(0.5, -200, 0.55, 0)
     title.BackgroundTransparency = 1
-    title.Text = "ORANGE HUB"
-    title.TextColor3 = Color3.fromRGB(255, 145, 0)
+    title.Text = ""
+    title.TextColor3 = Color3.fromRGB(255, 140, 0)
     title.Font = Enum.Font.GothamBold
-    title.TextSize = 32
-    title.TextTransparency = 1
+    title.TextSize = 40
     title.Parent = main
 
-    -- Кольцо загрузки
-    local ring = Instance.new("Frame")
-    ring.Size = UDim2.new(0, 130, 0, 130)
-    ring.Position = UDim2.new(0.5, -65, 0.5, -75)
-    ring.BackgroundTransparency = 1
-    ring.Parent = main
-
+    -- Эффект свечения для текста
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.fromRGB(255, 165, 0)
-    stroke.Thickness = 4
+    stroke.Thickness = 0
     stroke.Transparency = 1
-    stroke.Parent = ring
+    stroke.Parent = title
+    TweenService:Create(stroke, TweenInfo.new(1), {Thickness = 2, Transparency = 0.5}):Play()
 
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(1, 0)
-    corner.Parent = ring
+    local fullText = "ORANGE HUB"
+    for i = 1, #fullText do
+        title.Text = string.sub(fullText, 1, i)
+        -- Звук клика можно добавить тут, если нужно
+        task.wait(0.12) -- Скорость печати букв
+    end
 
-    -- Анимация появления элементов
-    local fadeInInfo = TweenInfo.new(1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-    TweenService:Create(logo, fadeInInfo, {TextTransparency = 0, Position = UDim2.new(0.5, -50, 0.5, -75)}):Play()
-    TweenService:Create(title, fadeInInfo, {TextTransparency = 0}):Play()
-    TweenService:Create(stroke, fadeInInfo, {Transparency = 0.2}):Play()
+    task.wait(1.5) -- Пауза в конце, когда всё появилось
 
-    -- Анимация бесконечного вращения кольца
-    local rotateInfo = TweenInfo.new(2.5, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1)
-    local rotationTween = TweenService:Create(ring, rotateInfo, {Rotation = 360})
-    rotationTween:Play()
-
-    -- Имитация "умной загрузки" (ждем чуть-чуть для красоты)
-    task.wait(3.5)
-
-    -- Анимация исчезновения
-    local fadeOutInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
-    TweenService:Create(logo, fadeOutInfo, {TextTransparency = 1}):Play()
-    TweenService:Create(title, fadeOutInfo, {TextTransparency = 1}):Play()
-    TweenService:Create(stroke, fadeOutInfo, {Transparency = 1}):Play()
-    TweenService:Create(blur, fadeOutInfo, {Size = 0}):Play()
+    -- 3. Плавное исчезновение перед открытием меню
+    local fadeOut = TweenInfo.new(0.7, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+    TweenService:Create(logo, fadeOut, {TextTransparency = 1}):Play()
+    TweenService:Create(title, fadeOut, {TextTransparency = 1}):Play()
+    TweenService:Create(stroke, fadeOut, {Transparency = 1}):Play()
+    TweenService:Create(blur, fadeOut, {Size = 0}):Play()
     
-    task.wait(0.8)
+    task.wait(0.7)
     sg:Destroy()
     blur:Destroy()
 end
 
--- Запускаем анимацию в отдельном потоке
-task.spawn(ShowProfessionalIntro)
+-- ЗАПУСК АНИМАЦИИ (ждем её окончания перед загрузкой меню)
+RunCinematicIntro()
 
 -- ==========================================
---         ЛОГИКА ЗАГРУЗКИ МОДУЛЕЙ
+--    ЗАГРУЗКА МОДУЛЕЙ И ОТКРЫТИЕ МЕНЮ
 -- ==========================================
 local BASE_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/"
 _G.Modules = {}
 
 local function Load(name)
-    -- Уникальная ссылка для обхода кэша GitHub
     local url = BASE_URL .. name .. ".lua?nocache=" .. tostring(os.clock())
     local s, res = pcall(function() return game:HttpGet(url) end)
     
@@ -115,22 +99,19 @@ local function Load(name)
         local f, err = loadstring(res)
         if f then
             _G.Modules[name] = f()
-            print("✅ [ORANGE HUB] " .. name .. " loaded")
+            print("✅ Loaded: " .. name)
         else
-            warn("❌ [ORANGE HUB] Error in " .. name .. ": " .. err)
+            warn("❌ Error: " .. err)
         end
-    else
-        warn("❌ [ORANGE HUB] Failed to fetch " .. name)
     end
 end
 
--- Порядок загрузки модулей
--- Напоминание: ESP настроен на Мамонтов, Культистов и Медведей
+-- Теперь модули и UI загружаются только ПОСЛЕ анимации
 Load("Player")
 Load("Fly")
 Load("InfiniteJump")
 Load("FullBright")
 Load("ESP")
-Load("UI")
+Load("UI") -- Меню откроется здесь
 
 print("--- ORANGE HUB V4 ACTIVATED ---")
