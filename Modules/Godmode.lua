@@ -1,61 +1,45 @@
--- [[ ORANGE HUB - ULTIMATE GODMODE ENGINE ]]
+-- [[ ORANGE HUB - GODMODE (NO-GLITCH VERSION) ]]
 local LP = game:GetService("Players").LocalPlayer
 
-local function GodmodeEngine(state)
-    _G.GodmodeActive = state
-    
-    if _G.GodmodeActive then
-        task.spawn(function()
-            local char = LP.Character
-            if not char then return end
-            
-            local hum = char:FindFirstChildOfClass("Humanoid")
-            if hum then
-                -- МЕТОД 1: ПОДМЕНА ХЬЮМАНОИДА (Обход серверного урона)
-                -- Мы создаем копию, которая не привязана к серверным скриптам урона
-                local newHum = hum:Clone()
-                newHum.Parent = char
-                hum:Destroy()
-                LP.Character = char -- Переподключаем персонажа
+local function RunGodmodeEngine()
+    task.spawn(function()
+        while true do
+            if _G.GodmodeActive then
+                local char = LP.Character
+                local hum = char and char:FindFirstChildOfClass("Humanoid")
                 
-                -- МЕТОД 2: УДАЛЕНИЕ ОБРАБОТЧИКА
-                -- Удаляем стандартный скрипт Roblox, который отвечает за получение урона
-                local healthScript = char:FindFirstChild("Health")
-                if healthScript then healthScript:Destroy() end
-                
-                -- МЕТОД 3: БЛОКИРОВКА СОСТОЯНИЙ
-                newHum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                newHum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                newHum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-                
-                print("🛡️ Godmode Engine: FULL ACTIVE")
-
-                -- ЦИКЛ ПОДДЕРЖКИ (Бесконечный хил и проверка на развал тела)
-                while _G.GodmodeActive and char and char.Parent do
-                    if newHum then
-                        if newHum.Health < newHum.MaxHealth then
-                            newHum.Health = newHum.MaxHealth
-                        end
-                        -- Если сервер принудительно ставит 0 HP
-                        if newHum:GetState() == Enum.HumanoidStateType.Dead then
-                            newHum:ChangeState(Enum.HumanoidStateType.Physics)
-                        end
+                if char and hum then
+                    -- 1. Защита от распада (Anti-Wolf)
+                    char.BreakJointsOnDeath = false
+                    
+                    -- 2. Блокируем смерть
+                    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                    
+                    -- 3. Мгновенный хил (каждый кадр)
+                    if hum.Health < hum.MaxHealth then
+                        hum.Health = hum.MaxHealth
                     end
-                    task.wait() -- Максимальная частота (каждый кадр)
+                    
+                    -- 4. Если ХП упало в 0 (серверный килл), не даем застыть
+                    if hum:GetState() == Enum.HumanoidStateType.Dead then
+                        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    end
+
+                    -- 5. Удаляем скрипт урона
+                    local hScript = char:FindFirstChild("Health")
+                    if hScript then hScript:Destroy() end
                 end
             end
-        end)
-    else
-        -- ОТКЛЮЧЕНИЕ: Убиваем персонажа, чтобы сбросить баги и вернуть нормальный Humanoid
-        if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
-            LP.Character:FindFirstChildOfClass("Humanoid").Health = 0
-            print("🛡️ Godmode Engine: DISABLED (Resetting Character)")
+            task.wait() -- Работает быстро, но не ломает систему
         end
-    end
+    end)
 end
 
--- Как использовать в твоем UI:
--- createToggle("Godmode", "GodmodeActive", function(v) GodmodeEngine(v) end)
+-- ЗАПУСК (только один раз при загрузке модуля)
+if not _G.GodmodeInitialized then
+    _G.GodmodeInitialized = true
+    RunGodmodeEngine()
+end
 
--- Или просто запустить:
-GodmodeEngine(true)
+-- Возвращаем пустую таблицу, чтобы ядро не ругалось
+return {}
