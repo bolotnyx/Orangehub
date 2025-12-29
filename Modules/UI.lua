@@ -1,194 +1,182 @@
--- [[ ORANGE HUB - PREMIER UI SYSTEM ]]
-local LP = game:GetService("Players").LocalPlayer
-local UIS = game:GetService("UserInputService")
+-- [[ ORANGE HUB V4 - UI ENHANCED (CLEAN & FIXED) ]]
+local LP = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
 
--- ПРОВЕРКА НА ПОВТОРНЫЙ ЗАПУСК
-if CoreGui:FindFirstChild("OrangeHubUI") then
-    CoreGui:FindFirstChild("OrangeHubUI"):Destroy()
+-- Удаление старой панели
+if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
+    game.CoreGui.OrangeHub_V4:Destroy() 
 end
 
--- [[ НАСТРОЙКИ ТЕМЫ ]]
-local Theme = {
-    Main = Color3.fromRGB(255, 140, 0),    -- Яркий оранжевый
-    Dark = Color3.fromRGB(15, 15, 15),     -- Фон меню
-    LightDark = Color3.fromRGB(25, 25, 25), -- Фон кнопок
-    Text = Color3.fromRGB(255, 255, 255),
-    Accent = Color3.fromRGB(255, 165, 0)
-}
+local gui = Instance.new("ScreenGui", game.CoreGui)
+gui.Name = "OrangeHub_V4"
 
--- [[ ОСНОВНЫЕ ОБЪЕКТЫ ]]
-local ScreenGui = Instance.new("ScreenGui", CoreGui)
-ScreenGui.Name = "OrangeHubUI"
-ScreenGui.ResetOnSpawn = false
+-- === ГЛАВНАЯ ПАНЕЛЬ ===
+local Main = Instance.new("Frame", gui)
+Main.Size = UDim2.new(0, 520, 0, 360)
+Main.Position = UDim2.new(0.5, -260, 0.5, -180)
+Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
+Main.BorderSizePixel = 0
+Main.Active = true
+Main.Draggable = true
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 
--- УВЕДОМЛЕНИЯ
-local NotifContainer = Instance.new("Frame", ScreenGui)
-NotifContainer.Size = UDim2.new(0, 250, 1, 0)
-NotifContainer.Position = UDim2.new(1, -260, 0, 10)
-NotifContainer.BackgroundTransparency = 1
+-- === САЙДБАР ===
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 160, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
 
-local function Notify(title, text, duration)
-    local f = Instance.new("Frame", NotifContainer)
-    f.Size = UDim2.new(1, 0, 0, 60)
-    f.BackgroundColor3 = Theme.Dark
-    f.BackgroundTransparency = 0.2
-    Instance.new("UICorner", f).CornerRadius = UDim.new(0, 6)
-    
-    local line = Instance.new("Frame", f)
-    line.Size = UDim2.new(1, 0, 0, 3)
-    line.Position = UDim2.new(0, 0, 1, -3)
-    line.BackgroundColor3 = Theme.Main
-    
-    local tl = Instance.new("TextLabel", f)
-    tl.Size = UDim2.new(1, -10, 1, 0)
-    tl.Position = UDim2.new(0, 10, 0, 0)
-    tl.Text = "🍊 " .. title:upper() .. "\n" .. text
-    tl.TextColor3 = Theme.Text
-    tl.Font = Enum.Font.GothamBold
-    tl.TextSize = 13
-    tl.BackgroundTransparency = 1
-    tl.TextXAlignment = Enum.TextXAlignment.Left
-
-    f.Position = UDim2.new(1.5, 0, 0, #NotifContainer:GetChildren() * 65)
-    f:TweenPosition(UDim2.new(0, 0, 0, f.Position.Y.Offset), "Out", "Back", 0.4, true)
-    
-    line:TweenSize(UDim2.new(0, 0, 0, 3), "In", "Linear", duration or 3)
-    task.delay(duration or 3, function()
-        f:TweenPosition(UDim2.new(1.5, 0, 0, f.Position.Y.Offset), "In", "Quad", 0.4, true)
-        task.wait(0.4)
-        f:Destroy()
-    end)
-end
-
--- ГЛАВНОЕ ОКНО
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 550, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -275, 0.5, -200)
-MainFrame.BackgroundColor3 = Theme.Dark
-MainFrame.BorderSizePixel = 0
-MainFrame.ClipsDescendants = true
-
-local MainCorner = Instance.new("UICorner", MainFrame)
-MainCorner.CornerRadius = UDim.new(0, 10)
-
--- БОКОВАЯ ПАНЕЛЬ (КАТЕГОРИИ)
-local SideBar = Instance.new("Frame", MainFrame)
-SideBar.Size = UDim2.new(0, 150, 1, 0)
-SideBar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-SideBar.BorderSizePixel = 0
-
-local Title = Instance.new("TextLabel", SideBar)
+local Title = Instance.new("TextLabel", Sidebar)
+Title.Size = UDim2.new(1, 0, 0, 60)
 Title.Text = "ORANGE HUB"
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.TextColor3 = Theme.Main
-Title.Font = Enum.Font.GothamBlack
-Title.TextSize = 18
+Title.TextColor3 = Color3.fromRGB(255, 165, 0)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 22
 Title.BackgroundTransparency = 1
 
-local CatList = Instance.new("UIListLayout", SideBar)
-CatList.Padding = UDim.new(0, 5)
+-- === КНОПКИ СВЕРНУТЬ / РАЗВЕРНУТЬ ===
+local Collapse = Instance.new("TextButton", Main)
+Collapse.Size = UDim2.new(0, 35, 0, 35)
+Collapse.Position = UDim2.new(1, -40, 0, 5)
+Collapse.Text = "—"
+Collapse.TextSize = 25
+Collapse.Font = Enum.Font.GothamBold
+Collapse.TextColor3 = Color3.new(1, 1, 1)
+Collapse.BackgroundTransparency = 1
 
--- КОНТЕЙНЕР ДЛЯ СТРАНИЦ
-local PageFolder = Instance.new("Folder", MainFrame)
+local OpenBtn = Instance.new("TextButton", gui)
+OpenBtn.Size = UDim2.new(0, 65, 0, 65)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -32)
+OpenBtn.Text = "🍊"
+OpenBtn.TextSize = 45
+OpenBtn.BackgroundTransparency = 1
+OpenBtn.Visible = false
+OpenBtn.Draggable = true
 
-local function CreateCategory(name, icon)
-    local CatBtn = Instance.new("TextButton", SideBar)
-    CatBtn.Size = UDim2.new(1, -10, 0, 35)
-    CatBtn.BackgroundColor3 = Color3.new(1,1,1)
-    CatBtn.BackgroundTransparency = 1
-    CatBtn.Text = "  " .. icon .. "  " .. name
-    CatBtn.TextColor3 = Color3.fromRGB(150, 150, 150)
-    CatBtn.Font = Enum.Font.GothamBold
-    CatBtn.TextSize = 14
-    CatBtn.TextXAlignment = Enum.TextXAlignment.Left
+Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
+OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 
-    local Page = Instance.new("ScrollingFrame", PageFolder)
-    Page.Size = UDim2.new(1, -160, 1, -20)
-    Page.Position = UDim2.new(0, 160, 0, 10)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarThickness = 0
-    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 5)
+-- === КОНТЕЙНЕР ДЛЯ ЭЛЕМЕНТОВ ===
+local Container = Instance.new("ScrollingFrame", Main)
+Container.Size = UDim2.new(1, -180, 1, -70)
+Container.Position = UDim2.new(0, 175, 0, 60)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.ScrollBarThickness = 2
+local Layout = Instance.new("UIListLayout", Container)
+Layout.Padding = UDim.new(0, 10)
+Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-    CatBtn.MouseButton1Click:Connect(function()
-        for _, p in pairs(PageFolder:GetChildren()) do p.Visible = false end
-        for _, b in pairs(SideBar:GetChildren()) do 
-            if b:IsA("TextButton") then b.TextColor3 = Color3.fromRGB(150, 150, 150) end 
-        end
-        Page.Visible = true
-        CatBtn.TextColor3 = Theme.Main
+-- === ФУНКЦИИ КОНСТРУКТОРА (С ПАМЯТЬЮ ЦВЕТА) ===
+
+local function createInput(name, callback)
+    local box = Instance.new("TextBox", Container)
+    box.Size = UDim2.new(1, -10, 0, 45)
+    box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+    box.PlaceholderText = name
+    box.Text = ""
+    box.TextColor3 = Color3.new(1, 1, 1)
+    box.Font = Enum.Font.GothamBold
+    box.TextSize = 14
+    Instance.new("UICorner", box)
+    box.FocusLost:Connect(function()
+        local num = tonumber(box.Text)
+        if num then callback(num) end
+        box.Text = ""
     end)
-
-    return Page
 end
 
--- ФУНКЦИЯ СОЗДАНИЯ КНОПОК
-local function AddToggle(parent, text, globalVar, callback)
-    local TFrame = Instance.new("TextButton", parent)
-    TFrame.Size = UDim2.new(1, -10, 0, 45)
-    TFrame.BackgroundColor3 = Theme.LightDark
-    TFrame.Text = "      " .. text
-    TFrame.TextColor3 = Color3.new(0.8, 0.8, 0.8)
-    TFrame.Font = Enum.Font.GothamBold
-    TFrame.TextSize = 14
-    TFrame.TextXAlignment = Enum.TextXAlignment.Left
-    TFrame.AutoButtonColor = false
-    Instance.new("UICorner", TFrame)
+local function createToggle(name, globalVar, callback)
+    local btn = Instance.new("TextButton", Container)
+    btn.Size = UDim2.new(1, -10, 0, 45)
+    
+    -- Проверка состояния при отрисовке (чтобы кнопка не была черной)
+    local state = _G[globalVar] or false
+    btn.BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(45, 45, 48)
+    
+    btn.Text = "   " .. name
+    btn.TextColor3 = Color3.new(1, 1, 1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 14
+    btn.TextXAlignment = Enum.TextXAlignment.Left
+    Instance.new("UICorner", btn)
 
-    local Indicator = Instance.new("Frame", TFrame)
-    Indicator.Size = UDim2.new(0, 4, 1, -10)
-    Indicator.Position = UDim2.new(0, 10, 0, 5)
-    Indicator.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
-    Instance.new("UICorner", Indicator)
-
-    TFrame.MouseButton1Click:Connect(function()
+    btn.MouseButton1Click:Connect(function()
         _G[globalVar] = not _G[globalVar]
-        local state = _G[globalVar]
+        local newState = _G[globalVar]
         
-        TweenService:Create(Indicator, TweenInfo.new(0.3), {BackgroundColor3 = state and Theme.Main or Color3.fromRGB(50, 50, 50)}):Play()
-        TweenService:Create(TFrame, TweenInfo.new(0.3), {TextColor3 = state and Color3.new(1,1,1) or Color3.new(0.8, 0.8, 0.8)}):Play()
+        -- Плавная смена цвета
+        TweenService:Create(btn, TweenInfo.new(0.3), {
+            BackgroundColor3 = newState and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(45, 45, 48)
+        }):Play()
         
-        Notify(text, state and "Enabled" or "Disabled", 2)
-        if callback then callback(state) end
+        callback(newState)
     end)
 end
 
--- [[ НАПОЛНЕНИЕ ]]
-local CombatPage = CreateCategory("Combat", "⚔️")
-local PlayerPage = CreateCategory("Player", "👤")
-local VisualsPage = CreateCategory("Visuals", "👁️")
+-- === ВКЛАДКИ ===
+local TabHolder = Instance.new("Frame", Sidebar)
+TabHolder.Size = UDim2.new(1, 0, 1, -80)
+TabHolder.Position = UDim2.new(0, 0, 0, 70)
+TabHolder.BackgroundTransparency = 1
+local TabLayout = Instance.new("UIListLayout", TabHolder)
+TabLayout.Padding = UDim.new(0, 5)
 
--- Кнопки
-AddToggle(PlayerPage, "Speed Hack", "SpeedEnabled")
-AddToggle(PlayerPage, "Infinite Jump", "InfJumpEnabled")
-AddToggle(CombatPage, "Godmode", "GodmodeActive")
-AddToggle(VisualsPage, "Monster ESP", "MonsterESPActive")
-
--- АВТО-ОТКРЫТИЕ ПЕРВОЙ СТРАНИЦЫ
-PageFolder:GetChildren()[1].Visible = true
-
--- DRAG SYSTEM (Перетаскивание)
-local dragging, dragInput, dragStart, startPos
-MainFrame.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true; dragStart = input.Position; startPos = MainFrame.Position
+local function showTab(name)
+    for _, v in pairs(Container:GetChildren()) do
+        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end
     end
-end)
-UIS.InputChanged:Connect(function(input)
-    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-        local delta = input.Position - dragStart
-        MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+
+    if name == "Player" then
+        createInput("WALK SPEED", function(v) _G.WalkSpeedValue = v end)
+        createToggle("Enable Walk Speed", "SpeedEnabled", function(v)
+            -- Вся логика теперь в WalkSpeed.lua на GitHub
+        end)
+
+        createInput("FLY SPEED", function(v) _G.FlySpeedValue = v end)
+        createToggle("Enable Fly", "FlyEnabled", function(v)
+            if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end
+        end)
+
+        createToggle("Infinite Jump", "InfJumpEnabled", function(v)
+            -- Логика в InfiniteJump.lua
+        end)
+
+        createToggle("FullBright", "FullBrightEnabled", function(v)
+            if v then
+                _G.OriginalLighting = {Brightness = game.Lighting.Brightness, ClockTime = game.Lighting.ClockTime}
+                game.Lighting.Brightness = 2
+                game.Lighting.ClockTime = 14
+            elseif _G.OriginalLighting then
+                game.Lighting.Brightness = _G.OriginalLighting.Brightness
+                game.Lighting.ClockTime = _G.OriginalLighting.ClockTime
+            end
+        end)
+
+    elseif name == "Combat" then
+        createToggle("Godmode (Anti-Wolf)", "GodmodeEnabled", function(v)
+            -- Логика в Godmode.lua
+        end)
+
+        createToggle("ESP Monsters", "MonsterESPActive", function(v)
+            if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end
+        end)
     end
-end)
-UIS.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end
-end)
+end
 
--- ГОРЯЧАЯ КЛАВИША
-UIS.InputBegan:Connect(function(i)
-    if i.KeyCode == Enum.KeyCode.RightControl then ScreenGui.Enabled = not ScreenGui.Enabled end
-end)
+local function addTabBtn(name)
+    local t = Instance.new("TextButton", TabHolder)
+    t.Size = UDim2.new(1, 0, 0, 45)
+    t.Text = name
+    t.Font = Enum.Font.GothamBold
+    t.TextSize = 16
+    t.TextColor3 = Color3.new(1, 1, 1)
+    t.BackgroundTransparency = 1
+    t.MouseButton1Click:Connect(function() showTab(name) end)
+end
 
-Notify("Orange Hub", "Loaded! Press RightControl to toggle UI", 5)
+addTabBtn("Player")
+addTabBtn("Combat")
+showTab("Player")
+
+return gui
