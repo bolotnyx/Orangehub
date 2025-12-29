@@ -1,11 +1,16 @@
--- [[ ORANGE HUB V4 - UI ENHANCED (CLEAN) ]]
+-- [[ ORANGE HUB V4 - UI ENHANCED (CLEAN & FIXED) ]]
 local LP = game.Players.LocalPlayer
-if game.CoreGui:FindFirstChild("OrangeHub_V4") then game.CoreGui.OrangeHub_V4:Destroy() end
+local TweenService = game:GetService("TweenService")
+
+-- Удаление старой панели
+if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
+    game.CoreGui.OrangeHub_V4:Destroy() 
+end
 
 local gui = Instance.new("ScreenGui", game.CoreGui)
 gui.Name = "OrangeHub_V4"
 
--- Главная панель
+-- === ГЛАВНАЯ ПАНЕЛЬ ===
 local Main = Instance.new("Frame", gui)
 Main.Size = UDim2.new(0, 520, 0, 360)
 Main.Position = UDim2.new(0.5, -260, 0.5, -180)
@@ -13,13 +18,13 @@ Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
 Main.BorderSizePixel = 0
 Main.Active = true
 Main.Draggable = true
-Instance.new("UICorner", Main)
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 
--- Сайдбар
+-- === САЙДБАР ===
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 160, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
-Instance.new("UICorner", Sidebar)
+Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
 
 local Title = Instance.new("TextLabel", Sidebar)
 Title.Size = UDim2.new(1, 0, 0, 60)
@@ -29,7 +34,7 @@ Title.Font = Enum.Font.GothamBold
 Title.TextSize = 22
 Title.BackgroundTransparency = 1
 
--- Кнопка сворачивания
+-- === КНОПКИ СВЕРНУТЬ / РАЗВЕРНУТЬ ===
 local Collapse = Instance.new("TextButton", Main)
 Collapse.Size = UDim2.new(0, 35, 0, 35)
 Collapse.Position = UDim2.new(1, -40, 0, 5)
@@ -51,10 +56,10 @@ OpenBtn.Draggable = true
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 
--- Контейнер для кнопок
+-- === КОНТЕЙНЕР ДЛЯ ЭЛЕМЕНТОВ ===
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -180, 1, -70)
-Container.Position = UDim2.new(0, 170, 0, 60)
+Container.Position = UDim2.new(0, 175, 0, 60)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 2
@@ -62,7 +67,8 @@ local Layout = Instance.new("UIListLayout", Container)
 Layout.Padding = UDim.new(0, 10)
 Layout.SortOrder = Enum.SortOrder.LayoutOrder
 
--- Создание поля ввода
+-- === ФУНКЦИИ КОНСТРУКТОРА (С ПАМЯТЬЮ ЦВЕТА) ===
+
 local function createInput(name, callback)
     local box = Instance.new("TextBox", Container)
     box.Size = UDim2.new(1, -10, 0, 45)
@@ -80,14 +86,13 @@ local function createInput(name, callback)
     end)
 end
 
--- Создание toggle-кнопки (ИСПРАВЛЕНО: Теперь помнит цвет)
 local function createToggle(name, globalVar, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
     
-    -- Установка цвета при загрузке вкладки на основе значения в _G
-    local currentState = _G[globalVar] or false
-    btn.BackgroundColor3 = currentState and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
+    -- Проверка состояния при отрисовке (чтобы кнопка не была черной)
+    local state = _G[globalVar] or false
+    btn.BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(45, 45, 48)
     
     btn.Text = "   " .. name
     btn.TextColor3 = Color3.new(1, 1, 1)
@@ -98,20 +103,24 @@ local function createToggle(name, globalVar, callback)
 
     btn.MouseButton1Click:Connect(function()
         _G[globalVar] = not _G[globalVar]
-        local state = _G[globalVar]
-        btn.BackgroundColor3 = state and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
-        callback(state)
+        local newState = _G[globalVar]
+        
+        -- Плавная смена цвета
+        TweenService:Create(btn, TweenInfo.new(0.3), {
+            BackgroundColor3 = newState and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(45, 45, 48)
+        }):Play()
+        
+        callback(newState)
     end)
 end
 
--- Вкладки
+-- === ВКЛАДКИ ===
 local TabHolder = Instance.new("Frame", Sidebar)
 TabHolder.Size = UDim2.new(1, 0, 1, -80)
 TabHolder.Position = UDim2.new(0, 0, 0, 70)
 TabHolder.BackgroundTransparency = 1
 local TabLayout = Instance.new("UIListLayout", TabHolder)
 TabLayout.Padding = UDim.new(0, 5)
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local function showTab(name)
     for _, v in pairs(Container:GetChildren()) do
@@ -121,15 +130,7 @@ local function showTab(name)
     if name == "Player" then
         createInput("WALK SPEED", function(v) _G.WalkSpeedValue = v end)
         createToggle("Enable Walk Speed", "SpeedEnabled", function(v)
-            task.spawn(function()
-                while _G.SpeedEnabled do
-                    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
-                        LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue or 16
-                    end
-                    task.wait(0.1)
-                end
-                if LP.Character and LP.Character:FindFirstChild("Humanoid") then LP.Character.Humanoid.WalkSpeed = 16 end
-            end)
+            -- Вся логика теперь в WalkSpeed.lua на GitHub
         end)
 
         createInput("FLY SPEED", function(v) _G.FlySpeedValue = v end)
@@ -138,37 +139,23 @@ local function showTab(name)
         end)
 
         createToggle("Infinite Jump", "InfJumpEnabled", function(v)
-            if _G.Modules.Player then _G.Modules.Player.InfJumpEnabled = v end
+            -- Логика в InfiniteJump.lua
         end)
 
         createToggle("FullBright", "FullBrightEnabled", function(v)
             if v then
-                _G.OriginalLighting = {
-                    Brightness = game.Lighting.Brightness,
-                    ClockTime = game.Lighting.ClockTime,
-                    FogEnd = game.Lighting.FogEnd,
-                    FogStart = game.Lighting.FogStart,
-                    GlobalShadows = game.Lighting.GlobalShadows
-                }
+                _G.OriginalLighting = {Brightness = game.Lighting.Brightness, ClockTime = game.Lighting.ClockTime}
                 game.Lighting.Brightness = 2
                 game.Lighting.ClockTime = 14
-                game.Lighting.FogEnd = 100000
-                game.Lighting.FogStart = 0
-                game.Lighting.GlobalShadows = false
-            else
-                if _G.OriginalLighting then
-                    game.Lighting.Brightness = _G.OriginalLighting.Brightness
-                    game.Lighting.ClockTime = _G.OriginalLighting.ClockTime
-                    game.Lighting.FogEnd = _G.OriginalLighting.FogEnd
-                    game.Lighting.FogStart = _G.OriginalLighting.FogStart
-                    game.Lighting.GlobalShadows = _G.OriginalLighting.GlobalShadows
-                end
+            elseif _G.OriginalLighting then
+                game.Lighting.Brightness = _G.OriginalLighting.Brightness
+                game.Lighting.ClockTime = _G.OriginalLighting.ClockTime
             end
         end)
 
     elseif name == "Combat" then
-        createToggle("Godmode", "GodmodeEnabled", function(v)
-            -- Сюда мы добавим логику Godmode позже
+        createToggle("Godmode (Anti-Wolf)", "GodmodeEnabled", function(v)
+            -- Логика в Godmode.lua
         end)
 
         createToggle("ESP Monsters", "MonsterESPActive", function(v)
