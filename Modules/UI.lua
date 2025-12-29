@@ -1,151 +1,106 @@
--- [[ ORANGE HUB V4 - CLEAN UI CORE ]]
+-- [[ ORANGE HUB V4 - TOTAL FIXED CORE ]]
+repeat task.wait() until game:IsLoaded()
+
+if _G.OrangeHubLoaded then return end
+_G.OrangeHubLoaded = true
+
+-- 1. АНИМАЦИЯ (Профессиональная заставка)
+local function RunCinematicIntro()
+    local TS = game:GetService("TweenService")
+    local blur = Instance.new("BlurEffect", game:GetService("Lighting"))
+    local sg = Instance.new("ScreenGui", game:GetService("CoreGui"))
+    local main = Instance.new("Frame", sg)
+    main.Size = UDim2.new(1, 0, 1, 0)
+    main.BackgroundTransparency = 1
+    
+    local logo = Instance.new("TextLabel", main)
+    logo.Size = UDim2.new(0, 100, 0, 100)
+    logo.Position = UDim2.new(0.5, -50, 0.4, -50)
+    logo.Text = "🍊"
+    logo.TextSize = 100
+    logo.BackgroundTransparency = 1
+    logo.TextTransparency = 1
+
+    TS:Create(blur, TweenInfo.new(1), {Size = 20}):Play()
+    TS:Create(logo, TweenInfo.new(1), {TextTransparency = 0}):Play()
+    task.wait(1.5)
+    TS:Create(blur, TweenInfo.new(1), {Size = 0}):Play()
+    TS:Create(logo, TweenInfo.new(1), {TextTransparency = 1}):Play()
+    task.wait(1)
+    sg:Destroy()
+    blur:Destroy()
+end
+
+RunCinematicIntro()
+
+-- 2. ЗАГРУЗКА ИНТЕРФЕЙСА (Твой чистый UI)
+-- Мы загружаем его первым, чтобы появились кнопки
+local UI_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/UI.lua" 
+-- (Если UI.lua у тебя на гитхабе, он загрузится. Если нет - вставь код UI сюда)
+pcall(function() loadstring(game:HttpGet(UI_URL))() end)
+
+-- 3. ЛОГИКА ФУНКЦИЙ (Тот самый "мозг", который заставляет кнопки работать)
 local LP = game.Players.LocalPlayer
-local TweenService = game:GetService("TweenService")
 
--- Удаляем старую версию, если она есть
-if game.CoreGui:FindFirstChild("OrangeHub_V4") then 
-    game.CoreGui.OrangeHub_V4:Destroy() 
-end
-
-local gui = Instance.new("ScreenGui", game.CoreGui)
-gui.Name = "OrangeHub_V4"
-
--- === ГЛАВНАЯ ПАНЕЛЬ ===
-local Main = Instance.new("Frame", gui)
-Main.Size = UDim2.new(0, 520, 0, 360)
-Main.Position = UDim2.new(0.5, -260, 0.5, -180)
-Main.BackgroundColor3 = Color3.fromRGB(25, 25, 27)
-Main.BorderSizePixel = 0
-Main.Active = true
-Main.Draggable = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-
--- === САЙДБАР ===
-local Sidebar = Instance.new("Frame", Main)
-Sidebar.Size = UDim2.new(0, 160, 1, 0)
-Sidebar.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
-
-local Title = Instance.new("TextLabel", Sidebar)
-Title.Size = UDim2.new(1, 0, 0, 60)
-Title.Text = "ORANGE HUB"
-Title.TextColor3 = Color3.fromRGB(255, 165, 0)
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 22
-Title.BackgroundTransparency = 1
-
--- === КНОПКИ УПРАВЛЕНИЯ ОКНОМ ===
-local Collapse = Instance.new("TextButton", Main)
-Collapse.Size = UDim2.new(0, 35, 0, 35)
-Collapse.Position = UDim2.new(1, -40, 0, 5)
-Collapse.Text = "—"
-Collapse.TextSize = 25
-Collapse.Font = Enum.Font.GothamBold
-Collapse.TextColor3 = Color3.new(1, 1, 1)
-Collapse.BackgroundTransparency = 1
-
-local OpenBtn = Instance.new("TextButton", gui)
-OpenBtn.Size = UDim2.new(0, 65, 0, 65)
-OpenBtn.Position = UDim2.new(0, 20, 0.5, -32)
-OpenBtn.Text = "🍊"
-OpenBtn.TextSize = 45
-OpenBtn.BackgroundTransparency = 1
-OpenBtn.Visible = false
-OpenBtn.Draggable = true
-
-Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
-OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
-
--- === КОНТЕЙНЕР КОНТЕНТА ===
-local Container = Instance.new("ScrollingFrame", Main)
-Container.Size = UDim2.new(1, -180, 1, -70)
-Container.Position = UDim2.new(0, 175, 0, 60)
-Container.BackgroundTransparency = 1
-Container.BorderSizePixel = 0
-Container.ScrollBarThickness = 2
-local Layout = Instance.new("UIListLayout", Container)
-Layout.Padding = UDim.new(0, 10)
-Layout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- === ФУНКЦИИ КОНСТРУКТОРА ЭЛЕМЕНТОВ ===
-local function createInput(name, callback)
-    local box = Instance.new("TextBox", Container)
-    box.Size = UDim2.new(1, -10, 0, 45)
-    box.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
-    box.PlaceholderText = name
-    box.Text = ""
-    box.TextColor3 = Color3.new(1, 1, 1)
-    box.Font = Enum.Font.GothamBold
-    box.TextSize = 14
-    Instance.new("UICorner", box)
-    box.FocusLost:Connect(function()
-        local num = tonumber(box.Text)
-        if num then callback(num) else callback(box.Text) end
-        box.Text = ""
-    end)
-end
-
-local function createToggle(name, globalVar)
-    local btn = Instance.new("TextButton", Container)
-    btn.Size = UDim2.new(1, -10, 0, 45)
-    btn.BackgroundColor3 = _G[globalVar] and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
-    btn.Text = "   " .. name
-    btn.TextColor3 = Color3.new(1, 1, 1)
-    btn.Font = Enum.Font.GothamBold
-    btn.TextSize = 14
-    btn.TextXAlignment = Enum.TextXAlignment.Left
-    Instance.new("UICorner", btn)
-
-    btn.MouseButton1Click:Connect(function()
-        _G[globalVar] = not _G[globalVar]
-        TweenService:Create(btn, TweenInfo.new(0.3), {
-            BackgroundColor3 = _G[globalVar] and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
-        }):Play()
-    end)
-end
-
--- === ВКЛАДКИ ===
-local TabHolder = Instance.new("Frame", Sidebar)
-TabHolder.Size = UDim2.new(1, 0, 1, -80)
-TabHolder.Position = UDim2.new(0, 0, 0, 70)
-TabHolder.BackgroundTransparency = 1
-local TabLayout = Instance.new("UIListLayout", TabHolder)
-TabLayout.Padding = UDim.new(0, 5)
-TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local function showTab(name)
-    for _, v in pairs(Container:GetChildren()) do
-        if v:IsA("TextButton") or v:IsA("TextBox") then v:Destroy() end
+-- Логика Speed
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.SpeedEnabled and LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            LP.Character.Humanoid.WalkSpeed = _G.WalkSpeedValue or 16
+        elseif LP.Character and LP.Character:FindFirstChild("Humanoid") then
+            -- Если выключено, возвращаем стандартную скорость
+            if LP.Character.Humanoid.WalkSpeed ~= 16 and not _G.SpeedEnabled then
+                LP.Character.Humanoid.WalkSpeed = 16
+            end
+        end
     end
+end)
 
-    if name == "Player" then
-        createInput("WALK SPEED", function(v) _G.WalkSpeedValue = v end)
-        createToggle("Enable Walk Speed", "SpeedEnabled")
-        createInput("FLY SPEED", function(v) _G.FlySpeedValue = v end)
-        createToggle("Enable Fly", "FlyEnabled")
-        createToggle("Infinite Jump", "InfJumpEnabled")
-        createToggle("FullBright", "FullBrightEnabled")
-
-    elseif name == "Combat" then
-        createToggle("Godmode (Invincible)", "GodmodeEnabled")
-        createToggle("ESP Monsters", "MonsterESPActive")
+-- Логика Godmode
+task.spawn(function()
+    while task.wait(0.1) do
+        if _G.GodmodeEnabled and LP.Character then
+            local hum = LP.Character:FindFirstChildOfClass("Humanoid")
+            if hum then
+                hum.Health = hum.MaxHealth
+                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            end
+        end
     end
+end)
+
+-- Логика ESP (С учетом твоих предпочтений)
+-- Подсвечиваем: Mammoth, Cultist, Bears
+-- Игнорируем: Mammoth Tusk, Wolf Spawner и т.д.
+task.spawn(function()
+    while task.wait(2) do
+        if _G.MonsterESPActive then
+            for _, obj in pairs(game.Workspace:GetDescendants()) do
+                if (obj.Name:find("Mammoth") and not obj.Name:find("Tusk")) or 
+                   obj.Name:find("Cultist") or 
+                   obj.Name:find("Bear") then
+                    
+                    if not obj:FindFirstChild("SelectionBox") then
+                        local box = Instance.new("SelectionBox", obj)
+                        box.Adornee = obj
+                        box.Color3 = Color3.fromRGB(255, 165, 0) -- Оранжевый для мамонтов и культистов
+                        box.LineThickness = 0.05
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- 4. ЗАГРУЗКА ОСТАЛЬНЫХ МОДУЛЕЙ
+local function Load(name)
+    local BASE_URL = "https://raw.githubusercontent.com/bolotnyx/Orangehub/main/Modules/"
+    local url = BASE_URL .. name .. ".lua?nocache=" .. tostring(os.clock())
+    pcall(function() loadstring(game:HttpGet(url))() end)
 end
 
-local function addTabBtn(name)
-    local t = Instance.new("TextButton", TabHolder)
-    t.Size = UDim2.new(1, 0, 0, 45)
-    t.Text = name
-    t.Font = Enum.Font.GothamBold
-    t.TextSize = 16
-    t.TextColor3 = Color3.new(1, 1, 1)
-    t.BackgroundTransparency = 1
-    t.MouseButton1Click:Connect(function() showTab(name) end)
-end
+Load("Fly")
+Load("InfiniteJump")
+Load("FullBright")
 
--- Инициализация
-addTabBtn("Player")
-addTabBtn("Combat")
-showTab("Player")
-
-return gui
+print("--- ORANGE HUB V4 FULLY OPERATIONAL ---")
