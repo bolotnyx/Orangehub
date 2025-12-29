@@ -107,7 +107,7 @@ local function Load(name)
 end
 
 -- Теперь модули и UI загружаются только ПОСЛЕ анимации
-Load("Player")
+Load("WalkSpeed")
 Load("Fly")
 Load("InfiniteJump")
 Load("FullBright")
