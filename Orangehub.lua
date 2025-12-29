@@ -112,6 +112,7 @@ Load("Fly")
 Load("InfiniteJump")
 Load("FullBright")
 Load("ESP")
+Load("Godmode")
 Load("UI") -- Меню откроется здесь
 
 print("--- ORANGE HUB V4 ACTIVATED ---")
