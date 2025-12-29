@@ -1,4 +1,4 @@
--- [[ ORANGE HUB V4 - UI ENHANCED ]]
+-- [[ ORANGE HUB V4 - UI ENHANCED (CLEAN) ]]
 local LP = game.Players.LocalPlayer
 if game.CoreGui:FindFirstChild("OrangeHub_V4") then game.CoreGui.OrangeHub_V4:Destroy() end
 
@@ -51,12 +51,13 @@ OpenBtn.Draggable = true
 Collapse.MouseButton1Click:Connect(function() Main.Visible = false OpenBtn.Visible = true end)
 OpenBtn.MouseButton1Click:Connect(function() Main.Visible = true OpenBtn.Visible = false end)
 
--- Контейнер для кнопок и полей
+-- Контейнер для кнопок
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -180, 1, -70)
 Container.Position = UDim2.new(0, 170, 0, 60)
 Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
+Container.ScrollBarThickness = 2
 local Layout = Instance.new("UIListLayout", Container)
 Layout.Padding = UDim.new(0, 10)
 Layout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -79,11 +80,15 @@ local function createInput(name, callback)
     end)
 end
 
--- Создание toggle-кнопки
-local function createToggle(name, callback)
+-- Создание toggle-кнопки (ИСПРАВЛЕНО: Теперь помнит цвет)
+local function createToggle(name, globalVar, callback)
     local btn = Instance.new("TextButton", Container)
     btn.Size = UDim2.new(1, -10, 0, 45)
-    btn.BackgroundColor3 = Color3.fromRGB(45, 45, 48)
+    
+    -- Установка цвета при загрузке вкладки на основе значения в _G
+    local currentState = _G[globalVar] or false
+    btn.BackgroundColor3 = currentState and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
+    
     btn.Text = "   " .. name
     btn.TextColor3 = Color3.new(1, 1, 1)
     btn.Font = Enum.Font.GothamBold
@@ -91,9 +96,9 @@ local function createToggle(name, callback)
     btn.TextXAlignment = Enum.TextXAlignment.Left
     Instance.new("UICorner", btn)
 
-    local state = false
     btn.MouseButton1Click:Connect(function()
-        state = not state
+        _G[globalVar] = not _G[globalVar]
+        local state = _G[globalVar]
         btn.BackgroundColor3 = state and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(45, 45, 48)
         callback(state)
     end)
@@ -114,9 +119,8 @@ local function showTab(name)
     end
 
     if name == "Player" then
-        createInput("WALK SPEED (Example: 100)", function(v) _G.WalkSpeedValue = v end)
-        createToggle("Enable Walk Speed", function(v)
-            _G.SpeedEnabled = v
+        createInput("WALK SPEED", function(v) _G.WalkSpeedValue = v end)
+        createToggle("Enable Walk Speed", "SpeedEnabled", function(v)
             task.spawn(function()
                 while _G.SpeedEnabled do
                     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
@@ -128,18 +132,16 @@ local function showTab(name)
             end)
         end)
 
-        createInput("FLY SPEED (Example: 50)", function(v) _G.FlySpeedValue = v end)
-        createToggle("Enable Fly", function(v)
+        createInput("FLY SPEED", function(v) _G.FlySpeedValue = v end)
+        createToggle("Enable Fly", "FlyEnabled", function(v)
             if _G.Modules.Fly then _G.Modules.Fly.SetState(v) end
         end)
 
-        createToggle("Infinite Jump", function(v)
-            if _G.Modules.Player then
-                _G.Modules.Player.InfJumpEnabled = v
-            end
+        createToggle("Infinite Jump", "InfJumpEnabled", function(v)
+            if _G.Modules.Player then _G.Modules.Player.InfJumpEnabled = v end
         end)
 
-        createToggle("FullBright", function(v)
+        createToggle("FullBright", "FullBrightEnabled", function(v)
             if v then
                 _G.OriginalLighting = {
                     Brightness = game.Lighting.Brightness,
@@ -165,26 +167,11 @@ local function showTab(name)
         end)
 
     elseif name == "Combat" then
-        -- ДОБАВЛЕНА КНОПКА GODMODE
-        createToggle("Godmode (Invincible)", function(v)
-            _G.GodmodeEnabled = v
-            task.spawn(function()
-                while _G.GodmodeEnabled do
-                    if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
-                        local hum = LP.Character:FindFirstChildOfClass("Humanoid")
-                        hum.Health = hum.MaxHealth
-                        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                    end
-                    task.wait(0.1)
-                end
-                -- Когда выключаем, разрешаем умирать обратно
-                if LP.Character and LP.Character:FindFirstChildOfClass("Humanoid") then
-                    LP.Character:FindFirstChildOfClass("Humanoid"):SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-                end
-            end)
+        createToggle("Godmode", "GodmodeEnabled", function(v)
+            -- Сюда мы добавим логику Godmode позже
         end)
 
-        createToggle("ESP Monsters", function(v)
+        createToggle("ESP Monsters", "MonsterESPActive", function(v)
             if _G.Modules.ESP then _G.Modules.ESP.Enabled = v end
         end)
     end
