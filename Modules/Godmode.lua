@@ -1,52 +1,63 @@
--- [[ ORANGE HUB - REFINED GODMODE MODULE ]]
-local LP = game:GetService("Players").LocalPlayer
+-- Настройки Killaura
+local KillauraSettings = {
+    Distance = 15,        -- Радиус атаки (в метрах/студах)
+    AttackSpeed = 0.5,    -- Задержка между ударами (в секундах)
+    Enabled = true        -- Включена ли функция по умолчанию
+}
 
--- Функция запуска движка бессмертия
-local function StartGodmode()
-    task.spawn(function()
-        while true do
-            if _G.GodmodeActive then
-                local char = LP.Character
-                local hum = char and char:FindFirstChildOfClass("Humanoid")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+
+-- Функция для поиска ближайшей цели
+local function getNearestTarget()
+    local closestTarget = nil
+    local shortestDistance = KillauraSettings.Distance
+    
+    -- Получаем текущую позицию нашего персонажа
+    local rootPart = character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return nil end
+
+    -- Перебираем всех существ в Workspace
+    for _, obj in pairs(workspace:GetChildren()) do
+        local human = obj:FindFirstChildOfClass("Humanoid")
+        local targetRoot = obj:FindFirstChild("HumanoidRootPart")
+        
+        -- Проверяем: это не мы, у него есть здоровье, и это живое существо
+        if human and targetRoot and obj ~= character and human.Health > 0 then
+            local distance = (rootPart.Position - targetRoot.Position).Magnitude
+            
+            if distance <= shortestDistance then
+                closestTarget = obj
+                shortestDistance = distance
+            end
+        end
+    end
+    return closestTarget
+end
+
+-- Основной цикл работы (выполняется постоянно)
+task.spawn(function()
+    while true do
+        if KillauraSettings.Enabled then
+            local target = getNearestTarget()
+            
+            if target then
+                -- Проверяем, держит ли игрок инструмент (Tool)
+                local tool = character:FindFirstChildOfClass("Tool")
                 
-                if char and hum then
-                    -- 1. ЗАЩИТА ОТ РАЗВАЛА (Anti-Wolf / Anti-Killbrick)
-                    -- Не дает персонажу развалиться на части при получении урона
-                    char.BreakJointsOnDeath = false
-                    
-                    -- 2. БЛОКИРОВКА СМЕРТИ
-                    -- Запрещает Humanoid переходить в состояние "Dead"
-                    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-                    
-                    -- 3. СУПЕР-РЕГЕНЕРАЦИЯ
-                    -- Мгновенно лечит любые укусы волков
-                    if hum.Health < hum.MaxHealth then
-                        hum.Health = hum.MaxHealth
-                    end
-                    
-                    -- 4. АНТИ-ФРИЗ (Фикс "кирпичности")
-                    -- Если сервер поставил 0 HP, персонаж может упасть. Мы его поднимаем.
-                    if hum.Health <= 0.1 then
-                        hum.Health = 100
-                        hum:ChangeState(Enum.HumanoidStateType.GettingUp)
-                    end
-
-                    -- 5. УДАЛЕНИЕ СКРИПТА УРОНА
-                    -- Находим и удаляем стандартный скрипт Health, который есть в каждом персонаже
-                    local hScript = char:FindFirstChild("Health")
-                    if hScript then hScript:Destroy() end
+                if tool then
+                    -- Активируем инструмент (наносим удар)
+                    tool:Activate()
                 end
             end
-            task.wait() -- Максимальная скорость работы
         end
-    end)
-end
+        -- Ждем перед следующим ударом, чтобы не вызывать лаги
+        task.wait(KillauraSettings.AttackSpeed)
+    end
+end)
 
--- Автозапуск логики при загрузке модуля
-if not _G.GodmodeInitialized then
-    _G.GodmodeInitialized = true
-    StartGodmode()
-end
-
-print("✅ [ORANGE HUB] Godmode Module Loaded (Anti-Brick Version)")
-return {Loaded = true}
+-- Чтобы ты мог управлять этим из других скриптов Гитхаба:
+return KillauraSettings
