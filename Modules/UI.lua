@@ -556,13 +556,6 @@ end
 do
     local p = pages["Combat"]
 
-    -- Godmode стартует включённым в модуле (Enabled = true по умолчанию)
-    -- Синхронизируем состояние UI с реальным
-    _G.GodmodeEnabled = true
-    if _G.Modules and _G.Modules.Godmode then
-        _G.Modules.Godmode.Enabled = true
-    end
-
     sectionLabel(p, "Атака", 1)
     makeToggle(p, "Godmode (Анти-Волк)", "🛡", "GodmodeEnabled", 2, function(v)
         -- Синхронизируем с модулем
