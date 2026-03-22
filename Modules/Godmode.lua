@@ -1,66 +1,68 @@
--- [[ ORANGE HUB V4 - GODMODE (MULTI-METHOD) ]]
+-- [[ ORANGE HUB V4 - GODMODE ]]
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
-
 local GodmodeMod = { Enabled = false }
 
-local steppedConn = nil
-local hooked = false
+local conn = nil
 
 local function attachGodmode(char)
-    if steppedConn then steppedConn:Disconnect(); steppedConn = nil end
+    if conn then pcall(function() conn:Disconnect() end); conn = nil end
 
     local hum = char:WaitForChild("Humanoid", 10)
     if not hum then return end
 
-    -- ── Метод 1: Запрещаем Dead-стейт ──────────────────────────────
-    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-    hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
+    -- Не разрушать суставы при смерти
+    pcall(function() hum.BreakJointsOnDeath = false end)
 
-    -- ── Метод 2: Перехват TakeDamage (если executor поддерживает) ───
-    if not hooked and hookfunction and newcclosure then
-        local orig = hum.TakeDamage
-        hookfunction(orig, newcclosure(function(self, amount)
-            if GodmodeMod.Enabled then return end
-            return orig(self, amount)
-        end))
-        hooked = true
-    end
+    conn = RunService.Heartbeat:Connect(function()
+        if not GodmodeMod.Enabled then return end
 
-    -- ── Метод 3: RenderStepped — восстанавливаем HP каждый кадр ────
-    -- RenderStepped выполняется ДО рендера, это самая быстрая петля
-    local ok, err = pcall(function()
-        steppedConn = RunService.RenderStepped:Connect(function()
-            if not GodmodeMod.Enabled then return end
+        pcall(function()
+            -- 1. Запрет состояния смерти каждый кадр
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            if hum.Health ~= hum.MaxHealth then
+
+            -- 2. Восстановление HP
+            if hum.Health < hum.MaxHealth then
                 hum.Health = hum.MaxHealth
+            end
+
+            -- 3. Убираем возможность касания у частей тела (блокируем урон через Touch)
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") and part.CanTouch then
+                    part.CanTouch = false
+                end
             end
         end)
     end)
+end
 
-    -- Если RenderStepped недоступен (серверный контекст), используем Heartbeat
-    if not ok then
-        steppedConn = RunService.Heartbeat:Connect(function()
-            if not GodmodeMod.Enabled then return end
-            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            if hum.Health ~= hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-        end)
-    end
+-- hookfunction — перехват TakeDamage (работает в Synapse X, Wave и др.)
+local function tryHookTakeDamage(char)
+    pcall(function()
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if not hum then return end
+        if hookfunction and newcclosure then
+            local orig = hum.TakeDamage
+            hookfunction(orig, newcclosure(function(self, amount)
+                if GodmodeMod.Enabled and self == hum then return end
+                return orig(self, amount)
+            end))
+        end
+    end)
+end
+
+local function onCharacter(char)
+    task.wait(0.5)
+    attachGodmode(char)
+    tryHookTakeDamage(char)
 end
 
 if player.Character then
-    task.spawn(function() attachGodmode(player.Character) end)
+    task.spawn(onCharacter, player.Character)
 end
 
-player.CharacterAdded:Connect(function(char)
-    hooked = false
-    task.wait(0.3)
-    attachGodmode(char)
-end)
+player.CharacterAdded:Connect(onCharacter)
 
 return GodmodeMod
