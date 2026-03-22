@@ -1,60 +1,65 @@
--- [[ ORANGE HUB V4 - TRUE GODMODE ]]
-local Players = game:GetService("Players")
+-- [[ ORANGE HUB V4 - GODMODE (MULTI-METHOD) ]]
+local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 
-local GodmodeMod = {
-    Enabled = false
-}
+local GodmodeMod = { Enabled = false }
 
-local heartbeatConn = nil
-local deadStateConns = {}
+local steppedConn = nil
+local hooked = false
 
 local function attachGodmode(char)
-    -- Очищаем старые соединения
-    if heartbeatConn then heartbeatConn:Disconnect(); heartbeatConn = nil end
-    for _, c in ipairs(deadStateConns) do c:Disconnect() end
-    deadStateConns = {}
+    if steppedConn then steppedConn:Disconnect(); steppedConn = nil end
 
     local hum = char:WaitForChild("Humanoid", 10)
     if not hum then return end
 
-    local originalMax = hum.MaxHealth
+    -- ── Метод 1: Запрещаем Dead-стейт ──────────────────────────────
+    hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+    hum:SetStateEnabled(Enum.HumanoidStateType.Physics, false)
 
-    heartbeatConn = RunService.Heartbeat:Connect(function()
-        if not GodmodeMod.Enabled then return end
+    -- ── Метод 2: Перехват TakeDamage (если executor поддерживает) ───
+    if not hooked and hookfunction and newcclosure then
+        local orig = hum.TakeDamage
+        hookfunction(orig, newcclosure(function(self, amount)
+            if GodmodeMod.Enabled then return end
+            return orig(self, amount)
+        end))
+        hooked = true
+    end
 
-        -- 1. Запрещаем умирание
-        hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-
-        -- 2. Восстанавливаем здоровье каждый кадр
-        if hum.Health < hum.MaxHealth then
-            hum.Health = hum.MaxHealth
-        end
-
-        -- 3. Если MaxHealth изменился — возвращаем
-        if hum.MaxHealth ~= originalMax and originalMax > 0 then
-            hum.MaxHealth = originalMax
-        end
+    -- ── Метод 3: RenderStepped — восстанавливаем HP каждый кадр ────
+    -- RenderStepped выполняется ДО рендера, это самая быстрая петля
+    local ok, err = pcall(function()
+        steppedConn = RunService.RenderStepped:Connect(function()
+            if not GodmodeMod.Enabled then return end
+            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            if hum.Health ~= hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+        end)
     end)
 
-    -- При выключении — возвращаем Dead state
-    table.insert(deadStateConns, hum:GetPropertyChangedSignal("Health"):Connect(function()
-        if not GodmodeMod.Enabled then
-            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-        end
-    end))
+    -- Если RenderStepped недоступен (серверный контекст), используем Heartbeat
+    if not ok then
+        steppedConn = RunService.Heartbeat:Connect(function()
+            if not GodmodeMod.Enabled then return end
+            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+            if hum.Health ~= hum.MaxHealth then
+                hum.Health = hum.MaxHealth
+            end
+        end)
+    end
 end
 
--- Подключаемся к текущему персонажу
 if player.Character then
-    attachGodmode(player.Character)
+    task.spawn(function() attachGodmode(player.Character) end)
 end
 
--- И к каждому новому после респауна
 player.CharacterAdded:Connect(function(char)
-    task.wait(0.5) -- ждём загрузки персонажа
+    hooked = false
+    task.wait(0.3)
     attachGodmode(char)
 end)
 
