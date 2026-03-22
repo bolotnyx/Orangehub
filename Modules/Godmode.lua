@@ -1,62 +1,94 @@
--- [[ ORANGE HUB V4 - GODMODE ]]
+-- [[ ORANGE HUB V4 - GODMODE (DELTA COMPATIBLE) ]]
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
 local player = Players.LocalPlayer
 local GodmodeMod = { Enabled = false }
 
-local conn = nil
+local heartbeatConn = nil
+local metatableHooked = false
 
-local function attachGodmode(char)
-    if conn then pcall(function() conn:Disconnect() end); conn = nil end
+-- ── Метатаблица: перехватывает изменение Health с ЛЮБОГО источника (включая сервер) ──
+local function hookMetatable()
+    if metatableHooked then return end
+    if not (getrawmetatable and setreadonly and newcclosure) then return end
+
+    pcall(function()
+        local mt = getrawmetatable(game)
+        setreadonly(mt, false)
+
+        local oldNewIndex = mt.__newindex
+        mt.__newindex = newcclosure(function(self, key, value)
+            -- Блокируем снижение HP только для нашего персонажа
+            if GodmodeMod.Enabled and key == "Health" and type(value) == "number" then
+                pcall(function()
+                    local char = player.Character
+                    if char then
+                        local hum = char:FindFirstChildOfClass("Humanoid")
+                        if hum and rawequal(self, hum) and value < hum.MaxHealth then
+                            return -- Отменяем урон
+                        end
+                    end
+                end)
+                -- Проверяем снова после pcall (Lua не поддерживает ранний return из pcall)
+                local char = player.Character
+                if char then
+                    local hum = char:FindFirstChildOfClass("Humanoid")
+                    if hum and rawequal(self, hum) and value < hum.MaxHealth then
+                        return
+                    end
+                end
+            end
+            return oldNewIndex(self, key, value)
+        end)
+
+        setreadonly(mt, true)
+        metatableHooked = true
+    end)
+end
+
+-- ── Heartbeat: дополнительный слой — восстановление HP + Dead state ──────────────
+local function attachHeartbeat(char)
+    if heartbeatConn then pcall(function() heartbeatConn:Disconnect() end) end
 
     local hum = char:WaitForChild("Humanoid", 10)
     if not hum then return end
 
-    -- Не разрушать суставы при смерти
     pcall(function() hum.BreakJointsOnDeath = false end)
 
-    conn = RunService.Heartbeat:Connect(function()
+    heartbeatConn = RunService.Heartbeat:Connect(function()
         if not GodmodeMod.Enabled then return end
-
         pcall(function()
-            -- 1. Запрет состояния смерти каждый кадр
             hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-
-            -- 2. Восстановление HP
             if hum.Health < hum.MaxHealth then
                 hum.Health = hum.MaxHealth
-            end
-
-            -- 3. Убираем возможность касания у частей тела (блокируем урон через Touch)
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") and part.CanTouch then
-                    part.CanTouch = false
-                end
             end
         end)
     end)
 end
 
--- hookfunction — перехват TakeDamage (работает в Synapse X, Wave и др.)
-local function tryHookTakeDamage(char)
+-- ── hookfunction: перехват TakeDamage (Delta поддерживает) ───────────────────────
+local function hookTakeDamage(char)
     pcall(function()
-        local hum = char:FindFirstChildOfClass("Humanoid")
+        local hum = char:WaitForChild("Humanoid", 5)
         if not hum then return end
-        if hookfunction and newcclosure then
-            local orig = hum.TakeDamage
-            hookfunction(orig, newcclosure(function(self, amount)
-                if GodmodeMod.Enabled and self == hum then return end
-                return orig(self, amount)
-            end))
-        end
+        if not (hookfunction and newcclosure) then return end
+
+        local orig = hum.TakeDamage
+        hookfunction(orig, newcclosure(function(self, amount)
+            if GodmodeMod.Enabled then return end
+            return orig(self, amount)
+        end))
     end)
 end
 
+-- ── Инициализация ─────────────────────────────────────────────────────────────────
+hookMetatable() -- Один раз для всей сессии
+
 local function onCharacter(char)
-    task.wait(0.5)
-    attachGodmode(char)
-    tryHookTakeDamage(char)
+    task.wait(0.3)
+    attachHeartbeat(char)
+    hookTakeDamage(char)
 end
 
 if player.Character then
