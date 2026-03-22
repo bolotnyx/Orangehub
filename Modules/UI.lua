@@ -556,13 +556,23 @@ end
 do
     local p = pages["Combat"]
 
+    -- Godmode стартует включённым в модуле (Enabled = true по умолчанию)
+    -- Синхронизируем состояние UI с реальным
+    _G.GodmodeEnabled = true
+    if _G.Modules and _G.Modules.Godmode then
+        _G.Modules.Godmode.Enabled = true
+    end
+
     sectionLabel(p, "Атака", 1)
     makeToggle(p, "Godmode (Анти-Волк)", "🛡", "GodmodeEnabled", 2, function(v)
+        -- Синхронизируем с модулем
         if _G.Modules and _G.Modules.Godmode then
             _G.Modules.Godmode.Enabled = v
         end
     end)
     makeToggle(p, "Kill Aura", "💥", "KillAura", 3, function(v)
+        -- Устанавливаем ОБЕ переменные: глобальную и внутри модуля
+        _G.KillAura = v
         if _G.Modules and _G.Modules.Combat then
             _G.Modules.Combat.KillAura = v
         end
@@ -571,8 +581,13 @@ do
     makeDivider(p, 4)
     sectionLabel(p, "Kill Aura Дальность", 5)
     makeSlider(p, "Дальность атаки", "📏", "KillAuraRange", 5, 60, 25, 6, function(v)
+        _G.KillAuraRange = v
         if _G.Modules and _G.Modules.Combat then
             _G.Modules.Combat.Range = v
+        end
+        -- Также для Godmode
+        if _G.Modules and _G.Modules.Godmode then
+            _G.Modules.Godmode.Distance = v
         end
     end)
 end
