@@ -1,4 +1,6 @@
--- [[ ORANGE HUB V4 - PREMIUM EDITION (FULL FUNCTIONALITY) ]]
+-- [[ ORANGE HUB V4 - PREMIUM EDITION (FIXED & COMPATIBLE) ]]
+print("🍊 Orange Hub Loading...")
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
@@ -9,14 +11,31 @@ local Stats = game:GetService("Stats")
 local LP = Players.LocalPlayer
 
 -- ============================
+-- БЕЗОПАСНЫЙ ПОИСК GUI PARENT
+-- ============================
+local GuiParent
+pcall(function()
+    if gethui then 
+        GuiParent = gethui() 
+    else 
+        GuiParent = game:GetService("CoreGui") 
+    end
+end)
+if not GuiParent then
+    GuiParent = LP:WaitForChild("PlayerGui")
+end
+
+-- ============================
 --  ОЧИСТКА СТАРОГО GUI
 -- ============================
-if game.CoreGui:FindFirstChild("OrangeHub_Premium") then
-    game.CoreGui.OrangeHub_Premium:Destroy()
-end
-if game.Lighting:FindFirstChild("OrangeHub_Blur") then
-    game.Lighting.OrangeHub_Blur:Destroy()
-end
+pcall(function()
+    if GuiParent:FindFirstChild("OrangeHub_Premium") then
+        GuiParent.OrangeHub_Premium:Destroy()
+    end
+    if game.Lighting:FindFirstChild("OrangeHub_Blur") then
+        game.Lighting.OrangeHub_Blur:Destroy()
+    end
+end)
 
 -- ============================
 --  КОНФИГИ ЭКЗЕКУТОРА
@@ -40,9 +59,9 @@ local function LoadConfig()
         _G.Settings = {}
     end
 end
-LoadConfig()
 
-if not _G.Settings then _G.Settings = {} end
+pcall(LoadConfig)
+if type(_G.Settings) ~= "table" then _G.Settings = {} end
 
 -- ============================
 --  КОНСТАНТЫ И ЦВЕТА
@@ -73,12 +92,15 @@ gui.Name = "OrangeHub_Premium"
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-gui.Parent = game.CoreGui
+gui.Parent = GuiParent
 
-local blur = Instance.new("BlurEffect")
-blur.Name = "OrangeHub_Blur"
-blur.Size = 15
-blur.Parent = game.Lighting
+local blur
+pcall(function()
+    blur = Instance.new("BlurEffect")
+    blur.Name = "OrangeHub_Blur"
+    blur.Size = 15
+    blur.Parent = game.Lighting
+end)
 
 -- ============================
 --  WATERMARK
@@ -110,10 +132,13 @@ WmText:GetPropertyChangedSignal("TextBounds"):Connect(function()
 end)
 
 RunService.RenderStepped:Connect(function()
-    local fps = math.floor(workspace:GetRealPhysicsFPS())
+    local fps = 0
     local ping = 0
+    pcall(function() fps = math.floor(workspace:GetRealPhysicsFPS()) end)
     pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-    WmText.Text = string.format("🍊 Orange Premium | %s | FPS: %d | Ping: %dms", LP.Name, fps, ping)
+    
+    local pName = LP and LP.Name or "Unknown"
+    WmText.Text = string.format("🍊 Orange Premium | %s | FPS: %d | Ping: %dms", pName, fps, ping)
 end)
 
 -- ============================
@@ -196,13 +221,15 @@ local function Notify(title, message, isGood)
     TweenService:Create(mLabel, TWEEN_SMOOTH, {TextTransparency = 0}):Play()
 
     task.delay(3.5, function()
-        TweenService:Create(card, TWEEN_SMOOTH, {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)}):Play()
-        TweenService:Create(nStroke, TWEEN_SMOOTH, {Transparency = 1}):Play()
-        TweenService:Create(ico, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
-        TweenService:Create(tLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
-        TweenService:Create(mLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
+        pcall(function()
+            TweenService:Create(card, TWEEN_SMOOTH, {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)}):Play()
+            TweenService:Create(nStroke, TWEEN_SMOOTH, {Transparency = 1}):Play()
+            TweenService:Create(ico, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
+            TweenService:Create(tLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
+            TweenService:Create(mLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
+        end)
         task.wait(0.4)
-        card:Destroy()
+        if card and card.Parent then card:Destroy() end
     end)
 end
 
@@ -380,7 +407,7 @@ local function makeTabPage()
 end
 
 -- ============================
---  UI КОМПОНЕНТЫ (С ОБВОДКАМИ И КОНФИГОМ)
+--  UI КОМПОНЕНТЫ
 -- ============================
 local function sectionLabel(parent, text, order)
     local lbl = Instance.new("TextLabel")
@@ -409,7 +436,6 @@ local function makeToggle(parent, name, icon, globalVar, order, onToggle)
     card.Parent = parent
     Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
     
-    -- Премиальная обводка (UIStroke)
     local btnStroke = Instance.new("UIStroke", card)
     btnStroke.Color = C.Stroke
     btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
@@ -454,32 +480,33 @@ local function makeToggle(parent, name, icon, globalVar, order, onToggle)
     Instance.new("UICorner", circle).CornerRadius = UDim.new(0.5, 0)
 
     local function updateVisual(on)
-        TweenService:Create(pill, TWEEN_FAST, {BackgroundColor3 = on and C.Green or C.BG}):Play()
-        TweenService:Create(circle, TWEEN_FAST, {Position = on and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
-        TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = on and Color3.fromRGB(30, 35, 30) or C.Card}):Play()
-        TweenService:Create(btnStroke, TWEEN_FAST, {Color = on and C.Green or C.Stroke}):Play()
+        pcall(function()
+            TweenService:Create(pill, TWEEN_FAST, {BackgroundColor3 = on and C.Green or C.BG}):Play()
+            TweenService:Create(circle, TWEEN_FAST, {Position = on and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
+            TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = on and Color3.fromRGB(30, 35, 30) or C.Card}):Play()
+            TweenService:Create(btnStroke, TWEEN_FAST, {Color = on and C.Green or C.Stroke}):Play()
+        end)
     end
 
     updateVisual(state)
 
     card.MouseEnter:Connect(function()
-        if not _G.Settings[globalVar] then TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play() end
+        if not _G.Settings[globalVar] then pcall(function() TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play() end) end
     end)
     card.MouseLeave:Connect(function()
-        if not _G.Settings[globalVar] then TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play() end
+        if not _G.Settings[globalVar] then pcall(function() TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play() end) end
     end)
 
     card.MouseButton1Click:Connect(function()
         _G.Settings[globalVar] = not _G.Settings[globalVar]
         local newState = _G.Settings[globalVar]
         updateVisual(newState)
-        SaveConfig() -- Сохранение конфигурации
-        if onToggle then onToggle(newState) end
+        SaveConfig()
+        if onToggle then pcall(function() onToggle(newState) end) end
         Notify(name, newState and "Успешно включено" or "Успешно выключено", newState)
     end)
     
-    -- Инит при запуске
-    if onToggle then onToggle(state) end
+    if onToggle then pcall(function() onToggle(state) end) end
     return card
 end
 
@@ -566,7 +593,7 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
         valLbl.Text = tostring(newVal)
         fill.Size = UDim2.new(ratio, 0, 1, 0)
         knob.Position = UDim2.new(ratio, -7, 0.5, -7)
-        if onChange then onChange(newVal) end
+        if onChange then pcall(function() onChange(newVal) end) end
     end
 
     track.InputBegan:Connect(function(inp)
@@ -585,7 +612,7 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
         end
     end)
     
-    if onChange then onChange(val) end
+    if onChange then pcall(function() onChange(val) end) end
     return card
 end
 
@@ -714,14 +741,16 @@ local function switchTab(name)
 
     for _, btn in pairs(tabs) do
         local isActive = (btn.Name == name)
-        TweenService:Create(btn, TWEEN_FAST, {
-            BackgroundColor3 = isActive and C.Accent or C.Sidebar,
-            BackgroundTransparency = isActive and 0 or 1,
-        }):Play()
-        local lbl = btn:FindFirstChildOfClass("TextLabel")
-        if lbl then
-            TweenService:Create(lbl, TWEEN_FAST, {TextColor3 = isActive and C.BG or C.TextDim}):Play()
-        end
+        pcall(function()
+            TweenService:Create(btn, TWEEN_FAST, {
+                BackgroundColor3 = isActive and C.Accent or C.Sidebar,
+                BackgroundTransparency = isActive and 0 or 1,
+            }):Play()
+            local lbl = btn:FindFirstChildOfClass("TextLabel")
+            if lbl then
+                TweenService:Create(lbl, TWEEN_FAST, {TextColor3 = isActive and C.BG or C.TextDim}):Play()
+            end
+        end)
     end
 end
 
@@ -751,10 +780,10 @@ for _, td in ipairs(tabDefs) do
 
     btn.MouseButton1Click:Connect(function() switchTab(td.name) end)
     btn.MouseEnter:Connect(function()
-        if currentTab ~= td.name then TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 0.5}):Play() end
+        if currentTab ~= td.name then pcall(function() TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 0.5}):Play() end) end
     end)
     btn.MouseLeave:Connect(function()
-        if currentTab ~= td.name then TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 1}):Play() end
+        if currentTab ~= td.name then pcall(function() TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 1}):Play() end) end
     end)
     tabs[td.name] = btn
 end
@@ -767,25 +796,25 @@ local menuOpen = true
 local function toggleMenu()
     menuOpen = not menuOpen
     
-    -- Плавное изменение размера главного окна
-    TweenService:Create(Main, TWEEN_SMOOTH, {
-        Size = menuOpen and UDim2.new(0, 600, 0, 420) or UDim2.new(0, 600, 0, 0),
-        BackgroundTransparency = menuOpen and 0 or 1
-    }):Play()
-    
-    TweenService:Create(MainStroke, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
-    TweenService:Create(blur, TWEEN_SMOOTH, {Size = menuOpen and 15 or 0}):Play()
-    
-    -- Прячем/показываем внутренние элементы для плавности
-    for _, child in pairs(Main:GetDescendants()) do
-        if child:IsA("TextLabel") or child:IsA("TextButton") then
-            TweenService:Create(child, TWEEN_SMOOTH, {TextTransparency = menuOpen and 0 or 1}):Play()
-        elseif child:IsA("Frame") and child ~= Main then
-            TweenService:Create(child, TWEEN_SMOOTH, {BackgroundTransparency = menuOpen and child.BackgroundTransparency or 1}):Play()
-        elseif child:IsA("UIStroke") and child ~= MainStroke then
-            TweenService:Create(child, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
+    pcall(function()
+        TweenService:Create(Main, TWEEN_SMOOTH, {
+            Size = menuOpen and UDim2.new(0, 600, 0, 420) or UDim2.new(0, 600, 0, 0),
+            BackgroundTransparency = menuOpen and 0 or 1
+        }):Play()
+        
+        TweenService:Create(MainStroke, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
+        if blur then TweenService:Create(blur, TWEEN_SMOOTH, {Size = menuOpen and 15 or 0}):Play() end
+        
+        for _, child in pairs(Main:GetDescendants()) do
+            if child:IsA("TextLabel") or child:IsA("TextButton") then
+                TweenService:Create(child, TWEEN_SMOOTH, {TextTransparency = menuOpen and 0 or 1}):Play()
+            elseif child:IsA("Frame") and child ~= Main then
+                TweenService:Create(child, TWEEN_SMOOTH, {BackgroundTransparency = menuOpen and child.BackgroundTransparency or 1}):Play()
+            elseif child:IsA("UIStroke") and child ~= MainStroke then
+                TweenService:Create(child, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
+            end
         end
-    end
+    end)
 end
 
 UIS.InputBegan:Connect(function(inp, gp)
@@ -803,6 +832,5 @@ end)
 -- Финальное уведомление
 task.delay(0.5, function()
     Notify("Premium Edition", "Успешно загружен!", true)
+    print("🍊 Orange Hub Loaded Successfully!")
 end)
-
-return gui
