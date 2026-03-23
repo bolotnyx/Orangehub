@@ -1,109 +1,82 @@
--- [[ ORANGE HUB V4 - GODMODE (ULTIMATE) ]]
+-- [[ ORANGE HUB V4 - GODMODE ]]
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local player     = Players.LocalPlayer
 
 local GodmodeMod = { Enabled = false }
 
-local heartbeatConn = nil
+-- ── 1. __namecall — перехват TakeDamage ──────────────────────────────────────────
+pcall(function()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNC = mt.__namecall
+    mt.__namecall = newcclosure(function(self, ...)
+        if GodmodeMod.Enabled and getnamecallmethod() == "TakeDamage" then
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and rawequal(self, hum) then return end
+            end
+        end
+        return oldNC(self, ...)
+    end)
+    setreadonly(mt, true)
+end)
 
--- ── 1. ForceField — блокирует TakeDamage() ───────────────────────────────────────
-local function setForceField(char, state)
-    if not char then return end
-    local existing = char:FindFirstChildOfClass("ForceField")
-    if state and not existing then
-        local ff = Instance.new("ForceField")
-        ff.Visible = false
-        ff.Parent = char
-    elseif not state and existing then
-        existing:Destroy()
-    end
-end
-
--- ── 2. __namecall hook — перехватывает TakeDamage и Fire на уровне движка ────────
-local namecallHooked = false
-local function hookNamecall()
-    if namecallHooked then return end
-    if not (getrawmetatable and setreadonly and getnamecallmethod and newcclosure) then return end
-    pcall(function()
-        local mt = getrawmetatable(game)
-        setreadonly(mt, false)
-        local oldNamecall = mt.__namecall
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if GodmodeMod.Enabled and method == "TakeDamage" then
-                pcall(function()
-                    local char = player.Character
-                    if char and self == char:FindFirstChildOfClass("Humanoid") then
-                        return -- Блокируем
-                    end
-                end)
-                local char = player.Character
-                if char then
-                    local hum = char:FindFirstChildOfClass("Humanoid")
-                    if hum and rawequal(self, hum) then
-                        return -- Не передаём вызов дальше
-                    end
+-- ── 2. __newindex — перехват прямого урона: humanoid.Health = x ──────────────────
+pcall(function()
+    local mt = getrawmetatable(game)
+    setreadonly(mt, false)
+    local oldNI = mt.__newindex
+    mt.__newindex = newcclosure(function(self, key, value)
+        if GodmodeMod.Enabled and key == "Health" then
+            local char = player.Character
+            if char then
+                local hum = char:FindFirstChildOfClass("Humanoid")
+                if hum and rawequal(self, hum) then
+                    if value < hum.MaxHealth then return end
                 end
             end
-            return oldNamecall(self, ...)
-        end)
-        setreadonly(mt, true)
-        namecallHooked = true
+        end
+        return oldNI(self, key, value)
     end)
-end
+    setreadonly(mt, true)
+end)
 
--- ── 3. Heartbeat — восстанавливаем HP каждый кадр как резерв ─────────────────────
-local function attachHeartbeat(char)
-    if heartbeatConn then pcall(function() heartbeatConn:Disconnect() end) end
-    local hum = char:WaitForChild("Humanoid", 10)
-    if not hum then return end
-    pcall(function() hum.BreakJointsOnDeath = false end)
-    heartbeatConn = RunService.Heartbeat:Connect(function()
-        if not GodmodeMod.Enabled then return end
-        pcall(function()
-            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-            if hum.Health < hum.MaxHealth then
-                hum.Health = hum.MaxHealth
-            end
-        end)
-    end)
-end
+-- ── 3. Heartbeat — ForceField-петля + восстановление HP ──────────────────────────
+RunService.Heartbeat:Connect(function()
+    local char = player.Character
+    if not char then return end
 
--- ── Инициализация ─────────────────────────────────────────────────────────────────
-hookNamecall()
-
-local function onCharacter(char)
-    task.wait(0.3)
-    attachHeartbeat(char)
     if GodmodeMod.Enabled then
-        setForceField(char, true)
-    end
-end
-
-if player.Character then task.spawn(onCharacter, player.Character) end
-player.CharacterAdded:Connect(onCharacter)
-
--- ── Реакция на включение/выключение тоггла ────────────────────────────────────────
-local origEnabled = GodmodeMod.Enabled
-setmetatable(GodmodeMod, {
-    __newindex = function(t, k, v)
-        rawset(t, k, v)
-        if k == "Enabled" then
+        -- Пересоздаём ForceField если игра удалила
+        if not char:FindFirstChildOfClass("ForceField") then
+            local ff = Instance.new("ForceField")
+            ff.Visible = false
+            ff.Parent = char
+        end
+        -- Восстанавливаем HP
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
             pcall(function()
-                local char = player.Character
-                setForceField(char, v)
-                if not v then
-                    local hum = char and char:FindFirstChildOfClass("Humanoid")
-                    if hum then
-                        pcall(function()
-                            hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-                        end)
-                    end
+                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
+                if hum.Health < hum.MaxHealth then
+                    hum.Health = hum.MaxHealth
                 end
             end)
         end
+    else
+        -- Выключен — убираем ForceField
+        local ff = char:FindFirstChildOfClass("ForceField")
+        if ff then ff:Destroy() end
+        -- Возвращаем дефолт
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            pcall(function()
+                hum:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
+            end)
+        end
     end
-})
+end)
 
 return GodmodeMod
