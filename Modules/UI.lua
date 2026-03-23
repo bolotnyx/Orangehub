@@ -1,145 +1,44 @@
--- [[ ORANGE HUB V4 - PREMIUM EDITION (FIXED & COMPATIBLE) ]]
-print("🍊 Orange Hub Loading...")
-
-local Players = game:GetService("Players")
+-- [[ ORANGE HUB V4 - IMPROVED ]]
+local LP = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
-local Stats = game:GetService("Stats")
 
-local LP = Players.LocalPlayer
-
--- ============================
--- БЕЗОПАСНЫЙ ПОИСК GUI PARENT
--- ============================
-local GuiParent
-pcall(function()
-    if gethui then 
-        GuiParent = gethui() 
-    else 
-        GuiParent = game:GetService("CoreGui") 
-    end
-end)
-if not GuiParent then
-    GuiParent = LP:WaitForChild("PlayerGui")
+if game.CoreGui:FindFirstChild("OrangeHub_V4") then
+    game.CoreGui.OrangeHub_V4:Destroy()
 end
 
 -- ============================
---  ОЧИСТКА СТАРОГО GUI
--- ============================
-pcall(function()
-    if GuiParent:FindFirstChild("OrangeHub_Premium") then
-        GuiParent.OrangeHub_Premium:Destroy()
-    end
-    if game.Lighting:FindFirstChild("OrangeHub_Blur") then
-        game.Lighting.OrangeHub_Blur:Destroy()
-    end
-end)
-
--- ============================
---  КОНФИГИ ЭКЗЕКУТОРА
--- ============================
-local configName = "OrangeHub_Config.json"
-local function SaveConfig()
-    if writefile then
-        pcall(function()
-            writefile(configName, HttpService:JSONEncode(_G.Settings or {}))
-        end)
-    end
-end
-
-local function LoadConfig()
-    if readfile and isfile and isfile(configName) then
-        local success, data = pcall(function()
-            return HttpService:JSONDecode(readfile(configName))
-        end)
-        if success then _G.Settings = data end
-    else
-        _G.Settings = {}
-    end
-end
-
-pcall(LoadConfig)
-if type(_G.Settings) ~= "table" then _G.Settings = {} end
-
--- ============================
---  КОНСТАНТЫ И ЦВЕТА
+--  КОНСТАНТЫ / ЦВЕТА
 -- ============================
 local C = {
-    BG        = Color3.fromRGB(15, 15, 17),
-    Sidebar   = Color3.fromRGB(22, 22, 25),
-    Card      = Color3.fromRGB(28, 28, 32),
-    CardHover = Color3.fromRGB(35, 35, 40),
-    Accent    = Color3.fromRGB(255, 120, 0),
+    BG        = Color3.fromRGB(18, 18, 20),
+    Sidebar   = Color3.fromRGB(26, 26, 29),
+    Card      = Color3.fromRGB(34, 34, 38),
+    CardHover = Color3.fromRGB(42, 42, 48),
+    Accent    = Color3.fromRGB(255, 140, 0),
+    AccentDim = Color3.fromRGB(180, 90, 0),
     Green     = Color3.fromRGB(60, 200, 100),
     Red       = Color3.fromRGB(220, 60, 60),
-    Text      = Color3.fromRGB(240, 240, 240),
-    TextDim   = Color3.fromRGB(150, 150, 160),
-    Stroke    = Color3.fromRGB(40, 40, 45),
+    Text      = Color3.fromRGB(230, 230, 230),
+    TextDim   = Color3.fromRGB(140, 140, 150),
     White     = Color3.fromRGB(255, 255, 255),
     Divider   = Color3.fromRGB(50, 50, 55),
 }
 
-local TWEEN_FAST = TweenInfo.new(0.15, Enum.EasingStyle.Quart, Enum.EasingDirection.Out)
-local TWEEN_SMOOTH = TweenInfo.new(0.4, Enum.EasingStyle.Expo, Enum.EasingDirection.Out)
+local TWEEN_FAST = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TWEEN_MED  = TweenInfo.new(0.28, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TWEEN_SLOW = TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 
 -- ============================
---  ROOT GUI & ЭФФЕКТЫ
+--  ROOT GUI
 -- ============================
 local gui = Instance.new("ScreenGui")
-gui.Name = "OrangeHub_Premium"
+gui.Name = "OrangeHub_V4"
+gui.DisplayOrder = 100
 gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = true
-gui.ZIndexBehavior = Enum.ZIndexBehavior.Global
-gui.Parent = GuiParent
-
-local blur
-pcall(function()
-    blur = Instance.new("BlurEffect")
-    blur.Name = "OrangeHub_Blur"
-    blur.Size = 15
-    blur.Parent = game.Lighting
-end)
-
--- ============================
---  WATERMARK
--- ============================
-local Watermark = Instance.new("Frame")
-Watermark.Size = UDim2.new(0, 0, 0, 26)
-Watermark.Position = UDim2.new(1, -20, 0, 10)
-Watermark.AnchorPoint = Vector2.new(1, 0)
-Watermark.BackgroundColor3 = C.BG
-Watermark.ClipsDescendants = false
-Watermark.Parent = gui
-Instance.new("UICorner", Watermark).CornerRadius = UDim.new(0, 4)
-local wmStroke = Instance.new("UIStroke", Watermark)
-wmStroke.Color = C.Accent
-wmStroke.Thickness = 1
-
-local WmText = Instance.new("TextLabel")
-WmText.Size = UDim2.new(1, -20, 1, 0)
-WmText.Position = UDim2.new(0, 10, 0, 0)
-WmText.BackgroundTransparency = 1
-WmText.Text = "🍊 Orange Premium"
-WmText.TextColor3 = C.Text
-WmText.Font = Enum.Font.GothamMedium
-WmText.TextSize = 12
-WmText.Parent = Watermark
-
-WmText:GetPropertyChangedSignal("TextBounds"):Connect(function()
-    Watermark.Size = UDim2.new(0, WmText.TextBounds.X + 20, 0, 26)
-end)
-
-RunService.RenderStepped:Connect(function()
-    local fps = 0
-    local ping = 0
-    pcall(function() fps = math.floor(workspace:GetRealPhysicsFPS()) end)
-    pcall(function() ping = math.floor(Stats.Network.ServerStatsItem["Data Ping"]:GetValue()) end)
-    
-    local pName = LP and LP.Name or "Unknown"
-    WmText.Text = string.format("🍊 Orange Premium | %s | FPS: %d | Ping: %dms", pName, fps, ping)
-end)
+gui.Parent = game.CoreGui
 
 -- ============================
 --  УВЕДОМЛЕНИЯ
@@ -149,15 +48,18 @@ NotifHolder.Size = UDim2.new(0, 280, 1, 0)
 NotifHolder.Position = UDim2.new(1, -290, 0, 0)
 NotifHolder.BackgroundTransparency = 1
 NotifHolder.Parent = gui
-Instance.new("UIListLayout", NotifHolder).VerticalAlignment = Enum.VerticalAlignment.Bottom
-NotifHolder:FindFirstChildOfClass("UIListLayout").Padding = UDim.new(0, 6)
-NotifHolder:FindFirstChildOfClass("UIListLayout").SortOrder = Enum.SortOrder.LayoutOrder
+
+local notifLayout = Instance.new("UIListLayout")
+notifLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+notifLayout.Padding = UDim.new(0, 6)
+notifLayout.SortOrder = Enum.SortOrder.LayoutOrder
+notifLayout.Parent = NotifHolder
 
 local notifCount = 0
 local function Notify(title, message, isGood)
     notifCount += 1
     local color = isGood and C.Green or C.Red
-    local icon = isGood and "✓" or "✗"
+    local icon  = isGood and "✓" or "✗"
 
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, 60)
@@ -167,11 +69,8 @@ local function Notify(title, message, isGood)
     card.ClipsDescendants = true
     card.Parent = NotifHolder
     Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
-    
-    local nStroke = Instance.new("UIStroke", card)
-    nStroke.Color = C.Stroke
-    nStroke.Transparency = 1
 
+    -- Левая цветная полоса
     local accent = Instance.new("Frame")
     accent.Size = UDim2.new(0, 3, 1, 0)
     accent.BackgroundColor3 = color
@@ -187,7 +86,6 @@ local function Notify(title, message, isGood)
     ico.TextColor3 = color
     ico.Font = Enum.Font.GothamBold
     ico.TextSize = 18
-    ico.TextTransparency = 1
     ico.Parent = card
 
     local tLabel = Instance.new("TextLabel")
@@ -199,7 +97,6 @@ local function Notify(title, message, isGood)
     tLabel.Font = Enum.Font.GothamBold
     tLabel.TextSize = 13
     tLabel.TextXAlignment = Enum.TextXAlignment.Left
-    tLabel.TextTransparency = 1
     tLabel.Parent = card
 
     local mLabel = Instance.new("TextLabel")
@@ -211,25 +108,19 @@ local function Notify(title, message, isGood)
     mLabel.Font = Enum.Font.Gotham
     mLabel.TextSize = 11
     mLabel.TextXAlignment = Enum.TextXAlignment.Left
-    mLabel.TextTransparency = 1
     mLabel.Parent = card
 
-    TweenService:Create(card, TWEEN_SMOOTH, {BackgroundTransparency = 0}):Play()
-    TweenService:Create(nStroke, TWEEN_SMOOTH, {Transparency = 0}):Play()
-    TweenService:Create(ico, TWEEN_SMOOTH, {TextTransparency = 0}):Play()
-    TweenService:Create(tLabel, TWEEN_SMOOTH, {TextTransparency = 0}):Play()
-    TweenService:Create(mLabel, TWEEN_SMOOTH, {TextTransparency = 0}):Play()
+    -- Появление + слайд слева
+    card.Position = UDim2.new(0, 20, 0, 0)
+    TweenService:Create(card, TWEEN_MED, {BackgroundTransparency = 0, Position = UDim2.new(0, 0, 0, 0)}):Play()
 
     task.delay(3.5, function()
-        pcall(function()
-            TweenService:Create(card, TWEEN_SMOOTH, {BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0)}):Play()
-            TweenService:Create(nStroke, TWEEN_SMOOTH, {Transparency = 1}):Play()
-            TweenService:Create(ico, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
-            TweenService:Create(tLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
-            TweenService:Create(mLabel, TWEEN_SMOOTH, {TextTransparency = 1}):Play()
-        end)
-        task.wait(0.4)
-        if card and card.Parent then card:Destroy() end
+        TweenService:Create(card, TWEEN_MED, {
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 0, 0),
+        }):Play()
+        task.wait(0.3)
+        card:Destroy()
     end)
 end
 
@@ -237,120 +128,187 @@ end
 --  ГЛАВНОЕ ОКНО
 -- ============================
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, 600, 0, 420)
-Main.Position = UDim2.new(0.5, -300, 0.5, -210)
+Main.Size = UDim2.new(0, 560, 0, 0)   -- стартует с 0 для анимации
+Main.Position = UDim2.new(0.5, -280, 0.5, -200)
 Main.BackgroundColor3 = C.BG
 Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
+Main.ClipsDescendants = false
 Main.Parent = gui
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Color = C.Stroke
-MainStroke.Thickness = 1.5
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 
--- Плавное перетаскивание
-local dragging, dragInput, dragStart, startPos
-Main.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = Main.Position
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then dragging = false end
-        end)
-    end
-end)
-Main.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-RunService.Heartbeat:Connect(function()
-    if dragging and dragInput then
-        local delta = dragInput.Position - dragStart
-        local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        TweenService:Create(Main, TWEEN_FAST, {Position = targetPos}):Play()
-    end
-end)
+-- Анимация появления
+TweenService:Create(Main, TWEEN_SLOW, {Size = UDim2.new(0, 560, 0, 400)}):Play()
+
+-- Тень
+local shadow = Instance.new("ImageLabel")
+shadow.Size = UDim2.new(1, 40, 1, 40)
+shadow.Position = UDim2.new(0, -20, 0, -20)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://6015897843"
+shadow.ImageColor3 = Color3.new(0, 0, 0)
+shadow.ImageTransparency = 0.5
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+shadow.ZIndex = -1
+shadow.Parent = Main
 
 -- ============================
---  HEADER И СТРУКТУРА
+--  HEADER (drag-зона)
 -- ============================
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 50)
-Header.BackgroundTransparency = 1
+Header.Size = UDim2.new(1, 0, 0, 48)
+Header.BackgroundColor3 = C.Sidebar
+Header.BorderSizePixel = 0
 Header.Parent = Main
+Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 10)
 
-local HeaderLine = Instance.new("Frame")
-HeaderLine.Size = UDim2.new(1, 0, 0, 1)
-HeaderLine.Position = UDim2.new(0, 0, 1, 0)
-HeaderLine.BackgroundColor3 = C.Stroke
-HeaderLine.BorderSizePixel = 0
-HeaderLine.Parent = Header
+-- Заполняем нижнюю часть хедера (убираем нижнее скругление)
+local HeaderFill = Instance.new("Frame")
+HeaderFill.Size = UDim2.new(1, 0, 0.5, 0)
+HeaderFill.Position = UDim2.new(0, 0, 0.5, 0)
+HeaderFill.BackgroundColor3 = C.Sidebar
+HeaderFill.BorderSizePixel = 0
+HeaderFill.Parent = Header
 
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0, 200, 1, 0)
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "ORANGE HUB"
-Title.TextColor3 = C.Accent
-Title.Font = Enum.Font.GothamBold
-Title.TextSize = 16
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = Header
+local HeaderLogo = Instance.new("TextLabel")
+HeaderLogo.Size = UDim2.new(0, 40, 1, 0)
+HeaderLogo.Position = UDim2.new(0, 10, 0, 0)
+HeaderLogo.BackgroundTransparency = 1
+HeaderLogo.Text = "🍊"
+HeaderLogo.TextSize = 22
+HeaderLogo.Font = Enum.Font.GothamBold
+HeaderLogo.Parent = Header
 
-local Version = Instance.new("TextLabel")
-Version.Size = UDim2.new(0, 100, 1, 0)
-Version.Position = UDim2.new(0, 140, 0, 1)
-Version.BackgroundTransparency = 1
-Version.Text = "PREMIUM"
-Version.TextColor3 = C.TextDim
-Version.Font = Enum.Font.Gotham
-Version.TextSize = 11
-Version.TextXAlignment = Enum.TextXAlignment.Left
-Version.Parent = Header
+local HeaderTitle = Instance.new("TextLabel")
+HeaderTitle.Size = UDim2.new(0, 160, 0, 26)
+HeaderTitle.Position = UDim2.new(0, 44, 0, 4)
+HeaderTitle.BackgroundTransparency = 1
+HeaderTitle.Text = "ORANGE HUB"
+HeaderTitle.TextColor3 = C.Accent
+HeaderTitle.Font = Enum.Font.GothamBold
+HeaderTitle.TextSize = 18
+HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
+HeaderTitle.Parent = Header
 
--- Кнопки управления (закрыть/свернуть)
+local HeaderVersion = Instance.new("TextLabel")
+HeaderVersion.Size = UDim2.new(0, 120, 0, 16)
+HeaderVersion.Position = UDim2.new(0, 44, 0, 28)
+HeaderVersion.BackgroundTransparency = 1
+HeaderVersion.Text = "v4.0 · ADVANCED"
+HeaderVersion.TextColor3 = C.TextDim
+HeaderVersion.Font = Enum.Font.Gotham
+HeaderVersion.TextSize = 11
+HeaderVersion.TextXAlignment = Enum.TextXAlignment.Left
+HeaderVersion.Parent = Header
+
+-- Кнопка закрыть
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 30, 0, 30)
-CloseBtn.Position = UDim2.new(1, -40, 0, 10)
-CloseBtn.BackgroundColor3 = C.Red
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -36, 0, 10)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = C.White
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 13
+CloseBtn.TextSize = 12
 CloseBtn.BorderSizePixel = 0
+CloseBtn.AutoButtonColor = false
 CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
--- Sidebar
+CloseBtn.MouseEnter:Connect(function()
+    TweenService:Create(CloseBtn, TWEEN_FAST, {BackgroundColor3 = Color3.fromRGB(255, 70, 70)}):Play()
+end)
+CloseBtn.MouseLeave:Connect(function()
+    TweenService:Create(CloseBtn, TWEEN_FAST, {BackgroundColor3 = Color3.fromRGB(200, 50, 50)}):Play()
+end)
+
+-- Кнопка свернуть
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 28, 0, 28)
+MinBtn.Position = UDim2.new(1, -68, 0, 10)
+MinBtn.BackgroundColor3 = C.Card
+MinBtn.Text = "—"
+MinBtn.TextColor3 = C.TextDim
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.TextSize = 13
+MinBtn.BorderSizePixel = 0
+MinBtn.AutoButtonColor = false
+MinBtn.Parent = Header
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+
+MinBtn.MouseEnter:Connect(function()
+    TweenService:Create(MinBtn, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play()
+end)
+MinBtn.MouseLeave:Connect(function()
+    TweenService:Create(MinBtn, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play()
+end)
+
+-- ============================
+--  DRAG (только через хедер)
+-- ============================
+do
+    local dragging, dragStart, startPos = false, nil, nil
+
+    Header.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = inp.Position
+            startPos = Main.Position
+        end
+    end)
+
+    UIS.InputChanged:Connect(function(inp)
+        if dragging and inp.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = inp.Position - dragStart
+            Main.Position = UDim2.new(
+                startPos.X.Scale,
+                startPos.X.Offset + delta.X,
+                startPos.Y.Scale,
+                startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+
+    UIS.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+-- ============================
+--  SIDEBAR
+-- ============================
 local Sidebar = Instance.new("Frame")
-Sidebar.Size = UDim2.new(0, 150, 1, -51)
-Sidebar.Position = UDim2.new(0, 0, 0, 51)
+Sidebar.Size = UDim2.new(0, 140, 1, -48)
+Sidebar.Position = UDim2.new(0, 0, 0, 48)
 Sidebar.BackgroundColor3 = C.Sidebar
 Sidebar.BorderSizePixel = 0
 Sidebar.Parent = Main
 
-local SidebarLine = Instance.new("Frame")
-SidebarLine.Size = UDim2.new(0, 1, 1, 0)
-SidebarLine.Position = UDim2.new(1, 0, 0, 0)
-SidebarLine.BackgroundColor3 = C.Stroke
-SidebarLine.BorderSizePixel = 0
-SidebarLine.Parent = Sidebar
+-- Перекрываем верхнее скругление сайдбара
+local SidebarTop = Instance.new("Frame")
+SidebarTop.Size = UDim2.new(1, 0, 0, 6)
+SidebarTop.BackgroundColor3 = C.Sidebar
+SidebarTop.BorderSizePixel = 0
+SidebarTop.ZIndex = 2
+SidebarTop.Parent = Sidebar
 
 local SidebarLayout = Instance.new("UIListLayout")
-SidebarLayout.Parent = Sidebar
-SidebarLayout.Padding = UDim.new(0, 6)
+SidebarLayout.Padding = UDim.new(0, 4)
 SidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
+SidebarLayout.Parent = Sidebar
+
 local SidebarPad = Instance.new("UIPadding")
-SidebarPad.PaddingTop = UDim.new(0, 15)
-SidebarPad.PaddingLeft = UDim.new(0, 10)
-SidebarPad.PaddingRight = UDim.new(0, 10)
+SidebarPad.PaddingTop = UDim.new(0, 10)
+SidebarPad.PaddingLeft = UDim.new(0, 8)
+SidebarPad.PaddingRight = UDim.new(0, 8)
 SidebarPad.Parent = Sidebar
 
+-- Подсказка по хоткею внизу
 local HotkeyHint = Instance.new("TextLabel")
 HotkeyHint.Size = UDim2.new(1, 0, 0, 24)
-HotkeyHint.Position = UDim2.new(0, 0, 1, -30)
+HotkeyHint.Position = UDim2.new(0, 0, 1, -28)
 HotkeyHint.BackgroundTransparency = 1
 HotkeyHint.Text = "RShift — скрыть"
 HotkeyHint.TextColor3 = C.TextDim
@@ -358,20 +316,19 @@ HotkeyHint.Font = Enum.Font.Gotham
 HotkeyHint.TextSize = 10
 HotkeyHint.Parent = Sidebar
 
--- Content
+-- ============================
+--  КОНТЕНТ
+-- ============================
 local ContentFrame = Instance.new("Frame")
-ContentFrame.Size = UDim2.new(1, -151, 1, -51)
-ContentFrame.Position = UDim2.new(0, 151, 0, 51)
+ContentFrame.Size = UDim2.new(1, -148, 1, -56)
+ContentFrame.Position = UDim2.new(0, 148, 0, 52)
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.ClipsDescendants = true
 ContentFrame.Parent = Main
 
 -- ============================
---  ВКЛАДКИ - ИНИЦИАЛИЗАЦИЯ
+--  СТРАНИЦЫ
 -- ============================
-local tabs = {}
-local currentTab = nil
-
 local tabDefs = {
     { name = "Player",  icon = "👤", order = 1 },
     { name = "Combat",  icon = "⚔️",  order = 2 },
@@ -384,7 +341,7 @@ local function makeTabPage()
     page.Size = UDim2.new(1, 0, 1, 0)
     page.BackgroundTransparency = 1
     page.BorderSizePixel = 0
-    page.ScrollBarThickness = 2
+    page.ScrollBarThickness = 3
     page.ScrollBarImageColor3 = C.Accent
     page.Visible = false
     page.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -397,17 +354,16 @@ local function makeTabPage()
     layout.Parent = page
 
     local pad = Instance.new("UIPadding")
-    pad.PaddingTop = UDim.new(0, 15)
-    pad.PaddingBottom = UDim.new(0, 15)
-    pad.PaddingRight = UDim.new(0, 15)
-    pad.PaddingLeft = UDim.new(0, 15)
+    pad.PaddingTop    = UDim.new(0, 6)
+    pad.PaddingBottom = UDim.new(0, 10)
+    pad.PaddingRight  = UDim.new(0, 12)
     pad.Parent = page
 
     return page
 end
 
 -- ============================
---  UI КОМПОНЕНТЫ
+--  ПОСТРОИТЕЛИ ЭЛЕМЕНТОВ
 -- ============================
 local function sectionLabel(parent, text, order)
     local lbl = Instance.new("TextLabel")
@@ -422,23 +378,27 @@ local function sectionLabel(parent, text, order)
     lbl.Parent = parent
 end
 
+local function makeDivider(parent, order)
+    local d = Instance.new("Frame")
+    d.Size = UDim2.new(1, 0, 0, 1)
+    d.BackgroundColor3 = C.Divider
+    d.BorderSizePixel = 0
+    d.LayoutOrder = order or 0
+    d.Parent = parent
+end
+
 local function makeToggle(parent, name, icon, globalVar, order, onToggle)
-    if _G.Settings[globalVar] == nil then _G.Settings[globalVar] = false end
-    local state = _G.Settings[globalVar]
+    local state = _G[globalVar] or false
 
     local card = Instance.new("TextButton")
     card.Size = UDim2.new(1, 0, 0, 48)
-    card.BackgroundColor3 = C.Card
+    card.BackgroundColor3 = state and Color3.fromRGB(30, 50, 35) or C.Card
     card.BorderSizePixel = 0
     card.Text = ""
     card.LayoutOrder = order or 0
     card.AutoButtonColor = false
     card.Parent = parent
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
-    
-    local btnStroke = Instance.new("UIStroke", card)
-    btnStroke.Color = C.Stroke
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
 
     local iconLbl = Instance.new("TextLabel")
     iconLbl.Size = UDim2.new(0, 36, 1, 0)
@@ -455,64 +415,68 @@ local function makeToggle(parent, name, icon, globalVar, order, onToggle)
     nameLbl.BackgroundTransparency = 1
     nameLbl.Text = name
     nameLbl.TextColor3 = C.Text
-    nameLbl.Font = Enum.Font.GothamMedium
+    nameLbl.Font = Enum.Font.GothamBold
     nameLbl.TextSize = 13
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.Parent = card
 
+    -- Pill (переключатель)
     local pill = Instance.new("Frame")
-    pill.Size = UDim2.new(0, 40, 0, 20)
-    pill.Position = UDim2.new(1, -50, 0.5, -10)
-    pill.BackgroundColor3 = state and C.Green or C.BG
+    pill.Size = UDim2.new(0, 42, 0, 22)
+    pill.Position = UDim2.new(1, -52, 0.5, -11)
+    pill.BackgroundColor3 = state and C.Green or C.CardHover
     pill.BorderSizePixel = 0
     pill.Parent = card
-    Instance.new("UICorner", pill).CornerRadius = UDim.new(0, 10)
-    
-    local pillStroke = Instance.new("UIStroke", pill)
-    pillStroke.Color = C.Stroke
+    Instance.new("UICorner", pill).CornerRadius = UDim.new(0, 11)
 
     local circle = Instance.new("Frame")
-    circle.Size = UDim2.new(0, 14, 0, 14)
-    circle.Position = state and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = state
+        and UDim2.new(1, -19, 0.5, -8)
+        or  UDim2.new(0, 3, 0.5, -8)
     circle.BackgroundColor3 = C.White
     circle.BorderSizePixel = 0
     circle.Parent = pill
     Instance.new("UICorner", circle).CornerRadius = UDim.new(0.5, 0)
 
     local function updateVisual(on)
-        pcall(function()
-            TweenService:Create(pill, TWEEN_FAST, {BackgroundColor3 = on and C.Green or C.BG}):Play()
-            TweenService:Create(circle, TWEEN_FAST, {Position = on and UDim2.new(1, -17, 0.5, -7) or UDim2.new(0, 3, 0.5, -7)}):Play()
-            TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = on and Color3.fromRGB(30, 35, 30) or C.Card}):Play()
-            TweenService:Create(btnStroke, TWEEN_FAST, {Color = on and C.Green or C.Stroke}):Play()
-        end)
+        TweenService:Create(pill, TWEEN_FAST, {
+            BackgroundColor3 = on and C.Green or C.CardHover
+        }):Play()
+        TweenService:Create(circle, TWEEN_FAST, {
+            Position = on
+                and UDim2.new(1, -19, 0.5, -8)
+                or  UDim2.new(0, 3, 0.5, -8)
+        }):Play()
+        TweenService:Create(card, TWEEN_FAST, {
+            BackgroundColor3 = on and Color3.fromRGB(30, 50, 35) or C.Card
+        }):Play()
     end
 
-    updateVisual(state)
-
     card.MouseEnter:Connect(function()
-        if not _G.Settings[globalVar] then pcall(function() TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play() end) end
+        if not (_G[globalVar] or false) then
+            TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play()
+        end
     end)
     card.MouseLeave:Connect(function()
-        if not _G.Settings[globalVar] then pcall(function() TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play() end) end
+        if not (_G[globalVar] or false) then
+            TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play()
+        end
     end)
 
     card.MouseButton1Click:Connect(function()
-        _G.Settings[globalVar] = not _G.Settings[globalVar]
-        local newState = _G.Settings[globalVar]
+        _G[globalVar] = not (_G[globalVar] or false)
+        local newState = _G[globalVar]
         updateVisual(newState)
-        SaveConfig()
-        if onToggle then pcall(function() onToggle(newState) end) end
-        Notify(name, newState and "Успешно включено" or "Успешно выключено", newState)
+        if onToggle then onToggle(newState) end
+        Notify(name, newState and "Включено" or "Выключено", newState)
     end)
-    
-    if onToggle then pcall(function() onToggle(state) end) end
+
     return card
 end
 
 local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, defaultVal, order, onChange)
-    if _G.Settings[globalVar] == nil then _G.Settings[globalVar] = defaultVal end
-    local val = _G.Settings[globalVar]
+    _G[globalVar] = _G[globalVar] or defaultVal
 
     local card = Instance.new("Frame")
     card.Size = UDim2.new(1, 0, 0, 64)
@@ -520,11 +484,7 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
     card.BorderSizePixel = 0
     card.LayoutOrder = order or 0
     card.Parent = parent
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 6)
-    
-    local btnStroke = Instance.new("UIStroke", card)
-    btnStroke.Color = C.Stroke
-    btnStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
 
     local iconLbl = Instance.new("TextLabel")
     iconLbl.Size = UDim2.new(0, 36, 0, 32)
@@ -541,7 +501,7 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
     nameLbl.BackgroundTransparency = 1
     nameLbl.Text = name
     nameLbl.TextColor3 = C.Text
-    nameLbl.Font = Enum.Font.GothamMedium
+    nameLbl.Font = Enum.Font.GothamBold
     nameLbl.TextSize = 13
     nameLbl.TextXAlignment = Enum.TextXAlignment.Left
     nameLbl.Parent = card
@@ -550,7 +510,7 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
     valLbl.Size = UDim2.new(0, 50, 0, 22)
     valLbl.Position = UDim2.new(1, -58, 0, 6)
     valLbl.BackgroundTransparency = 1
-    valLbl.Text = tostring(val)
+    valLbl.Text = tostring(defaultVal)
     valLbl.TextColor3 = C.Accent
     valLbl.Font = Enum.Font.GothamBold
     valLbl.TextSize = 13
@@ -559,16 +519,16 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
 
     local track = Instance.new("Frame")
     track.Size = UDim2.new(1, -20, 0, 6)
-    track.Position = UDim2.new(0, 10, 0, 42)
-    track.BackgroundColor3 = C.BG
+    track.Position = UDim2.new(0, 10, 0, 44)
+    track.BackgroundColor3 = C.Divider
     track.BorderSizePixel = 0
     track.Parent = card
     Instance.new("UICorner", track).CornerRadius = UDim.new(0.5, 0)
-    local tStroke = Instance.new("UIStroke", track)
-    tStroke.Color = C.Stroke
+
+    local initRatio = (defaultVal - minVal) / (maxVal - minVal)
 
     local fill = Instance.new("Frame")
-    fill.Size = UDim2.new((val - minVal) / (maxVal - minVal), 0, 1, 0)
+    fill.Size = UDim2.new(initRatio, 0, 1, 0)
     fill.BackgroundColor3 = C.Accent
     fill.BorderSizePixel = 0
     fill.Parent = track
@@ -576,97 +536,180 @@ local function makeSlider(parent, name, icon, globalVar, minVal, maxVal, default
 
     local knob = Instance.new("Frame")
     knob.Size = UDim2.new(0, 14, 0, 14)
-    knob.Position = UDim2.new((val - minVal) / (maxVal - minVal), -7, 0.5, -7)
+    knob.Position = UDim2.new(initRatio, -7, 0.5, -7)
     knob.BackgroundColor3 = C.White
     knob.BorderSizePixel = 0
     knob.Parent = track
     Instance.new("UICorner", knob).CornerRadius = UDim.new(0.5, 0)
 
     local dragging = false
+
     local function updateSlider(inputX)
-        local trackPos = track.AbsolutePosition.X
-        local trackW   = track.AbsoluteSize.X
-        local ratio = math.clamp((inputX - trackPos) / trackW, 0, 1)
-        local newVal = math.round(minVal + ratio * (maxVal - minVal))
-        
-        _G.Settings[globalVar] = newVal
-        valLbl.Text = tostring(newVal)
+        local ratio = math.clamp((inputX - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+        local val = math.round(minVal + ratio * (maxVal - minVal))
+        _G[globalVar] = val
+        valLbl.Text = tostring(val)
         fill.Size = UDim2.new(ratio, 0, 1, 0)
         knob.Position = UDim2.new(ratio, -7, 0.5, -7)
-        if onChange then pcall(function() onChange(newVal) end) end
+        if onChange then onChange(val) end
     end
 
     track.InputBegan:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; updateSlider(inp.Position.X)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            updateSlider(inp.Position.X)
         end
     end)
     UIS.InputChanged:Connect(function(inp)
-        if dragging and (inp.UserInputType == Enum.UserInputType.MouseMovement or inp.UserInputType == Enum.UserInputType.Touch) then
+        if dragging and (
+            inp.UserInputType == Enum.UserInputType.MouseMovement
+            or inp.UserInputType == Enum.UserInputType.Touch
+        ) then
             updateSlider(inp.Position.X)
         end
     end)
     UIS.InputEnded:Connect(function(inp)
-        if inp.UserInputType == Enum.UserInputType.MouseButton1 or inp.UserInputType == Enum.UserInputType.Touch then
-            dragging = false; SaveConfig()
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
         end
     end)
-    
-    if onChange then pcall(function() onChange(val) end) end
+
     return card
 end
 
-local function makeDivider(parent, order)
-    local d = Instance.new("Frame")
-    d.Size = UDim2.new(1, 0, 0, 1)
-    d.BackgroundColor3 = C.Stroke
-    d.BorderSizePixel = 0
-    d.LayoutOrder = order or 0
-    d.Parent = parent
+-- Новый элемент: кнопка действия
+local function makeButton(parent, name, icon, order, onClick)
+    local card = Instance.new("TextButton")
+    card.Size = UDim2.new(1, 0, 0, 44)
+    card.BackgroundColor3 = C.Card
+    card.BorderSizePixel = 0
+    card.Text = ""
+    card.LayoutOrder = order or 0
+    card.AutoButtonColor = false
+    card.Parent = parent
+    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
+
+    local iconLbl = Instance.new("TextLabel")
+    iconLbl.Size = UDim2.new(0, 36, 1, 0)
+    iconLbl.Position = UDim2.new(0, 8, 0, 0)
+    iconLbl.BackgroundTransparency = 1
+    iconLbl.Text = icon
+    iconLbl.TextSize = 18
+    iconLbl.Font = Enum.Font.GothamBold
+    iconLbl.Parent = card
+
+    local nameLbl = Instance.new("TextLabel")
+    nameLbl.Size = UDim2.new(1, -60, 1, 0)
+    nameLbl.Position = UDim2.new(0, 46, 0, 0)
+    nameLbl.BackgroundTransparency = 1
+    nameLbl.Text = name
+    nameLbl.TextColor3 = C.Text
+    nameLbl.Font = Enum.Font.GothamBold
+    nameLbl.TextSize = 13
+    nameLbl.TextXAlignment = Enum.TextXAlignment.Left
+    nameLbl.Parent = card
+
+    local arrow = Instance.new("TextLabel")
+    arrow.Size = UDim2.new(0, 24, 1, 0)
+    arrow.Position = UDim2.new(1, -28, 0, 0)
+    arrow.BackgroundTransparency = 1
+    arrow.Text = "›"
+    arrow.TextColor3 = C.AccentDim
+    arrow.Font = Enum.Font.GothamBold
+    arrow.TextSize = 20
+    arrow.Parent = card
+
+    card.MouseEnter:Connect(function()
+        TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play()
+        TweenService:Create(arrow, TWEEN_FAST, {TextColor3 = C.Accent}):Play()
+    end)
+    card.MouseLeave:Connect(function()
+        TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.Card}):Play()
+        TweenService:Create(arrow, TWEEN_FAST, {TextColor3 = C.AccentDim}):Play()
+    end)
+    card.MouseButton1Click:Connect(function()
+        TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.AccentDim}):Play()
+        task.delay(0.15, function()
+            TweenService:Create(card, TWEEN_FAST, {BackgroundColor3 = C.CardHover}):Play()
+        end)
+        if onClick then onClick() end
+    end)
+
+    return card
 end
 
 -- ============================
---  СТРАНИЦЫ И ФУНКЦИОНАЛ
+--  СТРАНИЦЫ ВКЛАДОК
 -- ============================
 local pages = {}
-for _, t in ipairs(tabDefs) do pages[t.name] = makeTabPage() end
+for _, t in ipairs(tabDefs) do
+    pages[t.name] = makeTabPage()
+end
 
--- PLAYER
+-- ============================
+--  PLAYER
+-- ============================
 do
     local p = pages["Player"]
     sectionLabel(p, "Передвижение", 1)
-    makeSlider(p, "Walk Speed", "🏃", "WalkSpeedValue", 16, 100, 16, 2, function(v) _G.WalkSpeedValue = v end)
-    makeToggle(p, "Включить Walk Speed", "⚡", "SpeedEnabled", 3, function(v) end)
+    makeSlider(p, "Walk Speed", "🏃", "WalkSpeedValue", 16, 100, 16, 2, function(v)
+        _G.WalkSpeedValue = v
+    end)
+    makeToggle(p, "Включить Walk Speed", "⚡", "SpeedEnabled", 3, function(v)
+        -- логика в WalkSpeed.lua
+    end)
     makeDivider(p, 4)
     sectionLabel(p, "Полёт", 5)
-    makeSlider(p, "Fly Speed", "✈️", "FlySpeedValue", 10, 200, 50, 6, function(v) _G.FlySpeedValue = v end)
+    makeSlider(p, "Fly Speed", "✈️", "FlySpeedValue", 10, 200, 50, 6, function(v)
+        _G.FlySpeedValue = v
+    end)
     makeToggle(p, "Включить Fly", "🚀", "FlyEnabled", 7, function(v)
-        if _G.Modules and _G.Modules.Fly then _G.Modules.Fly.SetState(v) end
+        if _G.Modules and _G.Modules.Fly then
+            _G.Modules.Fly.SetState(v)
+        end
     end)
     makeDivider(p, 8)
     sectionLabel(p, "Прыжки", 9)
-    makeToggle(p, "Infinite Jump", "🔄", "InfJumpEnabled", 10, function(v) end)
+    makeToggle(p, "Infinite Jump", "🔄", "InfJumpEnabled", 10, function(v)
+        -- логика в InfiniteJump.lua
+    end)
 end
 
--- COMBAT
+-- ============================
+--  COMBAT
+-- ============================
 do
     local p = pages["Combat"]
     sectionLabel(p, "Атака", 1)
     makeToggle(p, "Godmode (Анти-Волк)", "🛡", "GodmodeEnabled", 2, function(v)
-        if _G.Modules and _G.Modules.Godmode then _G.Modules.Godmode.Enabled = v end
+        if _G.Modules and _G.Modules.Godmode then
+            _G.Modules.Godmode.Enabled = v
+        end
     end)
     makeToggle(p, "Kill Aura", "💥", "KillAura", 3, function(v)
-        if _G.Modules and _G.Modules.Combat then _G.Modules.Combat.KillAura = v end
+        _G.KillAura = v
+        if _G.Modules and _G.Modules.Combat then
+            _G.Modules.Combat.KillAura = v
+        end
     end)
     makeDivider(p, 4)
     sectionLabel(p, "Kill Aura Дальность", 5)
     makeSlider(p, "Дальность атаки", "📏", "KillAuraRange", 5, 60, 25, 6, function(v)
-        if _G.Modules and _G.Modules.Combat then _G.Modules.Combat.Range = v end
-        if _G.Modules and _G.Modules.Godmode then _G.Modules.Godmode.Distance = v end
+        _G.KillAuraRange = v
+        if _G.Modules and _G.Modules.Combat then
+            _G.Modules.Combat.Range = v
+        end
+        if _G.Modules and _G.Modules.Godmode then
+            _G.Modules.Godmode.Distance = v
+        end
     end)
 end
 
--- VISUAL
+-- ============================
+--  VISUAL
+-- ============================
 do
     local p = pages["Visual"]
     sectionLabel(p, "Освещение", 1)
@@ -677,52 +720,85 @@ do
             local Lighting = game:GetService("Lighting")
             if v then
                 _G.OriginalLighting = {
-                    Brightness = Lighting.Brightness, ClockTime = Lighting.ClockTime,
-                    FogEnd = Lighting.FogEnd, GlobalShadows = Lighting.GlobalShadows, Ambient = Lighting.Ambient
+                    Brightness    = Lighting.Brightness,
+                    ClockTime     = Lighting.ClockTime,
+                    FogEnd        = Lighting.FogEnd,
+                    GlobalShadows = Lighting.GlobalShadows,
+                    Ambient       = Lighting.Ambient,
                 }
-                Lighting.Brightness = 1; Lighting.ClockTime = 12; Lighting.FogEnd = 100000
-                Lighting.GlobalShadows = false; Lighting.Ambient = Color3.fromRGB(178, 178, 178)
+                Lighting.Brightness    = 1
+                Lighting.ClockTime     = 12
+                Lighting.FogEnd        = 100000
+                Lighting.GlobalShadows = false
+                Lighting.Ambient       = Color3.fromRGB(178, 178, 178)
             elseif _G.OriginalLighting then
                 local o = _G.OriginalLighting
-                Lighting.Brightness = o.Brightness; Lighting.ClockTime = o.ClockTime
-                Lighting.FogEnd = o.FogEnd; Lighting.GlobalShadows = o.GlobalShadows; Lighting.Ambient = o.Ambient
+                Lighting.Brightness    = o.Brightness
+                Lighting.ClockTime     = o.ClockTime
+                Lighting.FogEnd        = o.FogEnd
+                Lighting.GlobalShadows = o.GlobalShadows
+                Lighting.Ambient       = o.Ambient
             end
         end
     end)
     makeDivider(p, 3)
     sectionLabel(p, "Монстры", 4)
     makeToggle(p, "ESP Монстры", "👾", "MonsterESPActive", 5, function(v)
-        if _G.Modules and _G.Modules.ESP then _G.Modules.ESP.Enabled = v end
+        if _G.Modules and _G.Modules.ESP then
+            _G.Modules.ESP.Enabled = v
+        end
     end)
     makeDivider(p, 6)
     sectionLabel(p, "Ресурсы", 7)
-    makeToggle(p, "ESP Ресурсы", "💎", "ResourceESPActive", 8, function(v) end)
+    makeToggle(p, "ESP Ресурсы", "💎", "ResourceESPActive", 8, function(v)
+        Notify("ESP Ресурсы", v and "Включён" or "Выключён", v)
+    end)
 end
 
--- MISC
+-- ============================
+--  MISC
+-- ============================
 do
     local p = pages["Misc"]
     sectionLabel(p, "Утилиты", 1)
     makeToggle(p, "Anti-AFK", "💤", "AntiAFKEnabled", 2, function(v)
-        if _G.Modules and _G.Modules.AntiAFK then _G.Modules.AntiAFK.Enabled = v end
+        if _G.Modules and _G.Modules.AntiAFK then
+            _G.Modules.AntiAFK.Enabled = v
+        end
     end)
+
     makeDivider(p, 3)
-    sectionLabel(p, "Информация", 4)
-    
+    sectionLabel(p, "Действия", 4)
+    makeButton(p, "Teleport to Spawn", "🏠", 5, function()
+        local char = LP.Character
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
+            if spawn then
+                hrp.CFrame = spawn.CFrame + Vector3.new(0, 3, 0)
+                Notify("Teleport", "Возрождение выполнено", true)
+            else
+                Notify("Teleport", "SpawnLocation не найден", false)
+            end
+        end
+    end)
+
+    makeDivider(p, 6)
+    sectionLabel(p, "Информация", 7)
+
     local infoCard = Instance.new("Frame")
     infoCard.Size = UDim2.new(1, 0, 0, 70)
     infoCard.BackgroundColor3 = C.Card
     infoCard.BorderSizePixel = 0
-    infoCard.LayoutOrder = 5
+    infoCard.LayoutOrder = 8
     infoCard.Parent = p
-    Instance.new("UICorner", infoCard).CornerRadius = UDim.new(0, 6)
-    Instance.new("UIStroke", infoCard).Color = C.Stroke
+    Instance.new("UICorner", infoCard).CornerRadius = UDim.new(0, 8)
 
     local infoText = Instance.new("TextLabel")
     infoText.Size = UDim2.new(1, -16, 1, 0)
     infoText.Position = UDim2.new(0, 8, 0, 0)
     infoText.BackgroundTransparency = 1
-    infoText.Text = "🍊 Orange Premium Edition\nИгра: 99 Nights in the Forest\nRShift — скрыть / показать GUI"
+    infoText.Text = "🍊 Orange Hub V4\nИгра: 99 Nights in the Forest\nRShift — скрыть / показать GUI"
     infoText.TextColor3 = C.TextDim
     infoText.Font = Enum.Font.Gotham
     infoText.TextSize = 12
@@ -732,25 +808,31 @@ do
 end
 
 -- ============================
---  ПЕРЕКЛЮЧЕНИЕ ВКЛАДОК
+--  ТАБ-КНОПКИ
 -- ============================
+local tabs = {}
+local currentTab = nil
+
 local function switchTab(name)
     if currentTab == name then return end
     currentTab = name
-    for tName, page in pairs(pages) do page.Visible = (tName == name) end
 
-    for _, btn in pairs(tabs) do
-        local isActive = (btn.Name == name)
-        pcall(function()
-            TweenService:Create(btn, TWEEN_FAST, {
-                BackgroundColor3 = isActive and C.Accent or C.Sidebar,
-                BackgroundTransparency = isActive and 0 or 1,
+    for tName, page in pairs(pages) do
+        page.Visible = (tName == name)
+    end
+
+    for tName, btn in pairs(tabs) do
+        local active = (tName == name)
+        TweenService:Create(btn, TWEEN_FAST, {
+            BackgroundColor3     = active and C.Accent or Color3.fromRGB(0, 0, 0),
+            BackgroundTransparency = active and 0 or 1,
+        }):Play()
+        local lbl = btn:FindFirstChildOfClass("TextLabel")
+        if lbl then
+            TweenService:Create(lbl, TWEEN_FAST, {
+                TextColor3 = active and C.BG or C.TextDim
             }):Play()
-            local lbl = btn:FindFirstChildOfClass("TextLabel")
-            if lbl then
-                TweenService:Create(lbl, TWEEN_FAST, {TextColor3 = isActive and C.BG or C.TextDim}):Play()
-            end
-        end)
+        end
     end
 end
 
@@ -758,79 +840,104 @@ for _, td in ipairs(tabDefs) do
     local btn = Instance.new("TextButton")
     btn.Name = td.name
     btn.Size = UDim2.new(1, 0, 0, 38)
-    btn.BackgroundColor3 = C.Sidebar
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.BackgroundTransparency = 1
     btn.Text = ""
     btn.BorderSizePixel = 0
     btn.LayoutOrder = td.order
     btn.AutoButtonColor = false
     btn.Parent = Sidebar
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 7)
+
+    -- Иконка отдельно для правильного выравнивания
+    local iconLbl = Instance.new("TextLabel")
+    iconLbl.Size = UDim2.new(0, 28, 1, 0)
+    iconLbl.Position = UDim2.new(0, 8, 0, 0)
+    iconLbl.BackgroundTransparency = 1
+    iconLbl.Text = td.icon
+    iconLbl.TextSize = 16
+    iconLbl.Font = Enum.Font.GothamBold
+    iconLbl.TextColor3 = C.TextDim
+    iconLbl.Parent = btn
 
     local lbl = Instance.new("TextLabel")
-    lbl.Size = UDim2.new(1, 0, 1, 0)
+    lbl.Size = UDim2.new(1, -40, 1, 0)
+    lbl.Position = UDim2.new(0, 38, 0, 0)
     lbl.BackgroundTransparency = 1
-    lbl.Text = "  " .. td.icon .. "  " .. td.name
+    lbl.Text = td.name
     lbl.TextColor3 = C.TextDim
-    lbl.TextXAlignment = Enum.TextXAlignment.Left
-    lbl.Position = UDim2.new(0, 10, 0, 0)
-    lbl.Font = Enum.Font.GothamMedium
+    lbl.Font = Enum.Font.GothamBold
     lbl.TextSize = 13
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
     lbl.Parent = btn
 
     btn.MouseButton1Click:Connect(function() switchTab(td.name) end)
     btn.MouseEnter:Connect(function()
-        if currentTab ~= td.name then pcall(function() TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 0.5}):Play() end) end
+        if currentTab ~= td.name then
+            TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 0.85}):Play()
+        end
     end)
     btn.MouseLeave:Connect(function()
-        if currentTab ~= td.name then pcall(function() TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 1}):Play() end) end
+        if currentTab ~= td.name then
+            TweenService:Create(btn, TWEEN_FAST, {BackgroundTransparency = 1}):Play()
+        end
     end)
+
     tabs[td.name] = btn
 end
+
 switchTab("Player")
 
 -- ============================
---  УПРАВЛЕНИЕ ОКНОМ (RShift / Close)
+--  КНОПКИ ХЕДЕРА
 -- ============================
-local menuOpen = true
-local function toggleMenu()
-    menuOpen = not menuOpen
-    
-    pcall(function()
-        TweenService:Create(Main, TWEEN_SMOOTH, {
-            Size = menuOpen and UDim2.new(0, 600, 0, 420) or UDim2.new(0, 600, 0, 0),
-            BackgroundTransparency = menuOpen and 0 or 1
-        }):Play()
-        
-        TweenService:Create(MainStroke, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
-        if blur then TweenService:Create(blur, TWEEN_SMOOTH, {Size = menuOpen and 15 or 0}):Play() end
-        
-        for _, child in pairs(Main:GetDescendants()) do
-            if child:IsA("TextLabel") or child:IsA("TextButton") then
-                TweenService:Create(child, TWEEN_SMOOTH, {TextTransparency = menuOpen and 0 or 1}):Play()
-            elseif child:IsA("Frame") and child ~= Main then
-                TweenService:Create(child, TWEEN_SMOOTH, {BackgroundTransparency = menuOpen and child.BackgroundTransparency or 1}):Play()
-            elseif child:IsA("UIStroke") and child ~= MainStroke then
-                TweenService:Create(child, TWEEN_SMOOTH, {Transparency = menuOpen and 0 or 1}):Play()
-            end
-        end
-    end)
-end
+local minimized = false
 
-UIS.InputBegan:Connect(function(inp, gp)
-    if gp then return end
-    if inp.KeyCode == Enum.KeyCode.RightShift then
-        toggleMenu()
-        if menuOpen then Notify("Orange Hub", "Интерфейс открыт", true) end
-    end
+MinBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    local targetH = minimized and 48 or 400
+    TweenService:Create(Main, TWEEN_MED, {Size = UDim2.new(0, 560, 0, targetH)}):Play()
+    task.delay(0.05, function()
+        Sidebar.Visible = not minimized
+        ContentFrame.Visible = not minimized
+    end)
+    MinBtn.Text = minimized and "□" or "—"
 end)
 
 CloseBtn.MouseButton1Click:Connect(function()
-    if menuOpen then toggleMenu() end
+    TweenService:Create(Main, TWEEN_MED, {Size = UDim2.new(0, 560, 0, 0)}):Play()
+    task.delay(0.3, function()
+        Main.Visible = false
+        Main.Size = UDim2.new(0, 560, 0, 400)
+    end)
 end)
 
--- Финальное уведомление
-task.delay(0.5, function()
-    Notify("Premium Edition", "Успешно загружен!", true)
-    print("🍊 Orange Hub Loaded Successfully!")
+-- ============================
+--  ГОРЯЧАЯ КЛАВИША (RSHIFT)
+-- ============================
+UIS.InputBegan:Connect(function(inp, gp)
+    if gp then return end
+    if inp.KeyCode == Enum.KeyCode.RightShift then
+        if Main.Visible then
+            TweenService:Create(Main, TWEEN_MED, {Size = UDim2.new(0, 560, 0, 0)}):Play()
+            task.delay(0.3, function()
+                Main.Visible = false
+                Main.Size = UDim2.new(0, 560, 0, 400)
+            end)
+        else
+            Main.Visible = true
+            Main.Size = UDim2.new(0, 560, 0, 0)
+            TweenService:Create(Main, TWEEN_SLOW, {Size = UDim2.new(0, 560, 0, 400)}):Play()
+            Notify("Orange Hub", "GUI открыт", true)
+        end
+    end
 end)
+
+-- ============================
+--  ФИНАЛЬНОЕ УВЕДОМЛЕНИЕ
+-- ============================
+task.delay(0.6, function()
+    Notify("Orange Hub V4", "Успешно загружен!", true)
+end)
+
+return gui
