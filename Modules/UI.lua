@@ -1,24 +1,23 @@
--- [[ ORANGE HUB V4 - PREMIUM FIXED ]]
+-- [[ ORANGE HUB V4 - DELTA FIXED FULL ]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local CoreGui = game:GetService("CoreGui")
 
 local LP = Players.LocalPlayer
 
 -- Удаление старого GUI
-if CoreGui:FindFirstChild("OrangeHub_V4") then
-    CoreGui.OrangeHub_V4:Destroy()
+if LP.PlayerGui:FindFirstChild("OrangeHub_V4") then
+    LP.PlayerGui.OrangeHub_V4:Destroy()
 end
 
--- Создание GUI (фикс)
+-- ✅ ВАЖНО: PlayerGui вместо CoreGui
 local gui = Instance.new("ScreenGui")
 gui.Name = "OrangeHub_V4"
-gui.Parent = CoreGui
+gui.Parent = LP:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
 
 -- === MAIN PANEL ===
-local Main = Instance.new("Frame")
-Main.Parent = gui
+local Main = Instance.new("Frame", gui)
 Main.Size = UDim2.new(0, 540, 0, 380)
 Main.Position = UDim2.new(0.5, -270, 0.5, -190)
 Main.BackgroundColor3 = Color3.fromRGB(20,20,22)
@@ -27,11 +26,12 @@ Main.Active = true
 Main.Draggable = true
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0,12)
 
+-- Обводка
 local stroke = Instance.new("UIStroke", Main)
 stroke.Color = Color3.fromRGB(255,140,0)
 stroke.Transparency = 0.4
 
--- === SIDEBAR ===
+-- === САЙДБАР ===
 local Sidebar = Instance.new("Frame", Main)
 Sidebar.Size = UDim2.new(0, 170, 1, 0)
 Sidebar.BackgroundColor3 = Color3.fromRGB(28,28,30)
@@ -45,6 +45,33 @@ Title.TextSize = 22
 Title.TextColor3 = Color3.fromRGB(255,170,0)
 Title.BackgroundTransparency = 1
 
+-- === КНОПКА СКРЫТИЯ ===
+local Collapse = Instance.new("TextButton", Main)
+Collapse.Size = UDim2.new(0, 30, 0, 30)
+Collapse.Position = UDim2.new(1, -35, 0, 5)
+Collapse.Text = "-"
+Collapse.TextColor3 = Color3.new(1,1,1)
+Collapse.BackgroundTransparency = 1
+
+local OpenBtn = Instance.new("TextButton", gui)
+OpenBtn.Size = UDim2.new(0, 60, 0, 60)
+OpenBtn.Position = UDim2.new(0, 20, 0.5, -30)
+OpenBtn.Text = "🍊"
+OpenBtn.TextSize = 40
+OpenBtn.Visible = false
+OpenBtn.BackgroundTransparency = 1
+OpenBtn.Draggable = true
+
+Collapse.MouseButton1Click:Connect(function()
+    Main.Visible = false
+    OpenBtn.Visible = true
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    Main.Visible = true
+    OpenBtn.Visible = false
+end)
+
 -- === CONTAINER ===
 local Container = Instance.new("ScrollingFrame", Main)
 Container.Size = UDim2.new(1, -190, 1, -70)
@@ -53,8 +80,7 @@ Container.BackgroundTransparency = 1
 Container.BorderSizePixel = 0
 Container.ScrollBarThickness = 4
 
-local Layout = Instance.new("UIListLayout")
-Layout.Parent = Container
+local Layout = Instance.new("UIListLayout", Container)
 Layout.Padding = UDim.new(0,10)
 
 -- === INPUT ===
@@ -67,7 +93,7 @@ local function createInput(name, callback)
     box.TextColor3 = Color3.new(1,1,1)
     box.Font = Enum.Font.GothamBold
     box.TextSize = 14
-    Instance.new("UICorner", box).CornerRadius = UDim.new(0,10)
+    Instance.new("UICorner", box)
 
     box.FocusLost:Connect(function()
         local num = tonumber(box.Text)
@@ -81,7 +107,7 @@ local function createToggle(name, globalVar, callback)
     local holder = Instance.new("Frame", Container)
     holder.Size = UDim2.new(1, -10, 0, 50)
     holder.BackgroundColor3 = Color3.fromRGB(40,40,42)
-    Instance.new("UICorner", holder).CornerRadius = UDim.new(0,10)
+    Instance.new("UICorner", holder)
 
     local label = Instance.new("TextLabel", holder)
     label.Size = UDim2.new(0.7,0,1,0)
@@ -176,7 +202,7 @@ local function addTabBtn(name)
     btn.TextSize = 16
     btn.TextColor3 = Color3.new(1,1,1)
     btn.BackgroundColor3 = Color3.fromRGB(35,35,38)
-    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+    Instance.new("UICorner", btn)
 
     btn.MouseButton1Click:Connect(function()
         showTab(name)
@@ -186,7 +212,6 @@ end
 addTabBtn("Player")
 addTabBtn("Combat")
 
--- ВАЖНО: сначала создаём, потом показываем
 task.wait()
 showTab("Player")
 
